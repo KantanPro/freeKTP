@@ -4,6 +4,9 @@
  * Plugin URI: https://ktpwp.com/
  * Description: 包括的なビジネス管理プラグイン。ショートコード[ktpwp_all_tab]で7つのタブ（仕事リスト・伝票処理・得意先・サービス・協力会社・レポート・設定）による完全なワークフロー管理を実現。
  * Version: beta 1.0.0
+=======
+ * Version: beta
+>>>>>>> 00416bf311e29f062129901bba2ac78091e789fa
  * Author: KantanPro
  * Author URI: https://ktpwp.com/blog/
  * License: GPL v2 or later
