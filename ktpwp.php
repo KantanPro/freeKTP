@@ -3,7 +3,7 @@
  * Plugin Name: KantanPro
  * Plugin URI: https://ktpwp.com/
  * Description: 包括的なビジネス管理プラグイン。ショートコード[ktpwp_all_tab]で7つのタブ（仕事リスト・伝票処理・得意先・サービス・協力会社・レポート・設定）による完全なワークフロー管理を実現。
- * Version: beta
+ * Version: beta 1.0.0
  * Author: KantanPro
  * Author URI: https://ktpwp.com/blog/
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // プラグイン定数定義
 if ( ! defined( 'KTPWP_PLUGIN_VERSION' ) ) {
-    define( 'KTPWP_PLUGIN_VERSION', 'beta' );
+    define( 'KTPWP_PLUGIN_VERSION', 'beta 1.0.0' );
 }
 if ( ! defined( 'KTPWP_PLUGIN_NAME' ) ) {
     define( 'KTPWP_PLUGIN_NAME', 'KantanPro' );
