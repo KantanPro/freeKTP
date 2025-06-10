@@ -3,10 +3,29 @@
 ## 概要
 このプロジェクトでWP-CLIを使用できるようにセットアップしました。
 
+## 初回セットアップ
+
+### 自動セットアップ（推奨）
+```bash
+./setup-wp-cli.sh
+```
+
+### 手動セットアップ
+```bash
+# WP-CLIをダウンロード
+curl -L https://github.com/wp-cli/wp-cli/releases/download/v2.8.1/wp-cli-2.8.1.phar -o wp-cli.phar
+chmod +x wp-cli.phar
+
+# エイリアスを読み込み
+source wp-cli-aliases.sh
+```
+
 ## セットアップ内容
-- WP-CLI 2.8.1 をダウンロード済み (`wp-cli.phar`)
-- 設定ファイル (`wp-cli.yml`) を作成済み
-- ラッパースクリプト (`wp-cli.sh`) を作成済み
+- WP-CLI 2.8.1 の設定ファイル
+- 設定ファイル (`wp-cli.yml`) 
+- ラッパースクリプト (`wp-cli.sh`)
+- エイリアス定義 (`wp-cli-aliases.sh`)
+- 自動セットアップスクリプト (`setup-wp-cli.sh`)
 
 ## 使用方法
 

@@ -1,18 +1,25 @@
 # KTPWP - WP-CLI クイックスタートガイド
 
-## 🚀 セットアップ完了
+## 🚀 初回セットアップ
 
-WP-CLIがKTPWPプロジェクトで使用できるようになりました！
-
-## ⚡ 即座に使用開始
-
-### 1. エイリアスを読み込む（推奨）
+### 1. WP-CLIをダウンロード
 ```bash
-cd /Users/kantanpro/KantanProLoalTest/wp/wp-content/plugins/KTPWP
+# 自動セットアップスクリプトを実行
+./setup-wp-cli.sh
+```
+
+または手動でダウンロード：
+```bash
+curl -L https://github.com/wp-cli/wp-cli/releases/download/v2.8.1/wp-cli-2.8.1.phar -o wp-cli.phar
+chmod +x wp-cli.phar
+```
+
+### 2. エイリアスを読み込む（推奨）
+```bash
 source wp-cli-aliases.sh
 ```
 
-### 2. 基本コマンドをテスト
+### 3. 基本コマンドをテスト
 ```bash
 # WordPress情報を確認
 wp --info
