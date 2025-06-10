@@ -1,0 +1,30 @@
+# WP-CLI configuration file for KTPWP project
+path: /Users/kantanpro/KantanProLoalTest/wp
+
+# Default URL for your WordPress site
+url: http://localhost/wp
+
+# Database configuration for Docker environment
+# Note: Make sure Docker containers are running for database access
+core config:
+  dbname: wordpress
+  dbuser: root
+  dbpass: example password
+  dbhost: 127.0.0.1:3306
+  dbprefix: wp_
+
+# Language settings
+locale: ja
+
+# Debug mode
+debug: true
+
+# Skip WordPress loading for commands that don't require it (faster execution)
+skip-wordpress: false
+
+# Disable colored output (optional)
+# color: false
+
+# Skip loading WordPress themes and plugins for faster execution (optional)
+# skip-themes: true
+# skip-plugins: true
