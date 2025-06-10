@@ -1276,7 +1276,14 @@ $content .= '</div>';
                 // 削除ボタンはworkflow内に移動済み
 
             } else {
-                $content .= '<div class="error">' . esc_html__('指定された受注書は見つかりませんでした。', 'ktpwp') . '</div>';
+                // 指定された受注書が見つからない場合も統一されたスタイルで表示
+                $content .= '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #ffeef1 0%, #ffeff2 100%); border-radius: 6px; margin: 15px 0; color: #333333; font-weight: 500; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); display: flex; align-items: center; font-size: 14px;">'
+                    . '<span style="margin-right: 10px; color: #ff6b8b; font-size: 18px;" class="material-symbols-outlined">search_off</span>'
+                    . esc_html__('指定された受注書は見つかりませんでした。', 'ktpwp')
+                    . '<span style="margin-left: 16px; font-size: 13px; color: #888;">'
+                    . esc_html__('得意先タブで顧客情報を入力し受注書を作成してください', 'ktpwp')
+                    . '</span>'
+                    . '</div>';
             }
 
         } else {
@@ -1291,7 +1298,14 @@ $content .= '</div>';
             $content .= "        </button>\n";
             $content .= "    </div>\n";
             $content .= "</div>\n";
-            $content .= "<p>" . esc_html__('表示する受注書がありません。', 'ktpwp') . "</p>";
+            // 仕事リストタブと統一されたデータ0の時の案内表示
+            $content .= '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #ffeef1 0%, #ffeff2 100%); border-radius: 6px; margin: 15px 0; color: #333333; font-weight: 500; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); display: flex; align-items: center; font-size: 14px;">'
+                . '<span style="margin-right: 10px; color: #ff6b8b; font-size: 18px;" class="material-symbols-outlined">search_off</span>'
+                . esc_html__('受注書データがありません。', 'ktpwp')
+                . '<span style="margin-left: 16px; font-size: 13px; color: #888;">'
+                . esc_html__('得意先タブで顧客情報を入力し受注書を作成してください', 'ktpwp')
+                . '</span>'
+                . '</div>';
         }
 
         // ページネーションロジック（表示はしないが計算は残す）
