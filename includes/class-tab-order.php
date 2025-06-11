@@ -338,7 +338,8 @@ class Kntan_Order_Class {
         $mail_form_html = '';
         $request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'NOT_SET';
 
-        // Handle staff chat message submission
+        // Handle staff chat message submission - AJAX処理に移行したためコメントアウト
+        /*
         if ( $request_method === 'POST' && isset( $_POST['staff_chat_message'] ) && isset( $_POST['staff_chat_order_id'] ) ) {
             // Verify nonce
             if ( isset( $_POST['staff_chat_nonce'] ) &&
@@ -371,6 +372,7 @@ class Kntan_Order_Class {
                 }
             }
         }
+        */
 
         // Handle email sending with proper security checks
         if ( $request_method === 'POST' && isset( $_POST['send_order_mail_id'] ) ) {

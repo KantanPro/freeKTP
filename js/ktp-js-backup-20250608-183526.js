@@ -455,6 +455,59 @@ window.showPinkbackNotification = showPinkbackNotification;
 
 // Staff Chat Functions
 document.addEventListener('DOMContentLoaded', function () {
+    // ページ読み込み時にローカルストレージをチェックして自動スクロール
+    if (localStorage.getItem('ktp_scroll_to_chat') === 'true') {
+        localStorage.removeItem('ktp_scroll_to_chat');
+        
+        // チャットを開く
+        var staffChatContent = document.getElementById('staff-chat-content');
+        var staffChatToggleBtn = document.querySelector('.toggle-staff-chat');
+        
+        if (staffChatContent && staffChatToggleBtn) {
+            staffChatContent.style.display = 'block';
+            staffChatToggleBtn.setAttribute('aria-expanded', 'true');
+            
+            // ボタンテキストを更新
+            var updateStaffChatButtonText = function () {
+                var scrollableMessages = staffChatContent.querySelectorAll('.staff-chat-message.scrollable');
+                var messageCount = scrollableMessages.length || 0;
+                var emptyMessage = staffChatContent.querySelector('.staff-chat-empty');
+                if (emptyMessage) {
+                    messageCount = 0;
+                }
+                var showLabel = staffChatToggleBtn.dataset.showLabel || 'スタッフチャット';
+                var hideLabel = staffChatToggleBtn.dataset.hideLabel || 'スタッフチャット';
+                var isExpanded = staffChatToggleBtn.getAttribute('aria-expanded') === 'true';
+                staffChatToggleBtn.textContent = (isExpanded ? hideLabel : showLabel) + '（' + messageCount + 'メッセージ）';
+            };
+            updateStaffChatButtonText();
+            
+            // 自動スクロール実行
+            setTimeout(function () {
+                // チャットセクションまでページをスクロール
+                var chatSection = document.querySelector('.order_memo_box h4');
+                if (!chatSection) {
+                    // h4が見つからない場合は、スタッフチャットのタイトルを探す
+                    chatSection = document.querySelector('.staff-chat-title');
+                }
+                if (chatSection) {
+                    chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                
+                // メッセージエリアを最下部にスクロール
+                var messagesContainer = document.getElementById('staff-chat-messages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } else {
+                    // fallback: staff-chat-contentをスクロール
+                    if (staffChatContent) {
+                        staffChatContent.scrollTop = staffChatContent.scrollHeight;
+                    }
+                }
+            }, 500);
+        }
+    }
+    
     // スタッフチャットメッセージエリアの自動スクロール
     function scrollToBottom() {
         // チャットが閉じている場合はスクロールしない
@@ -537,11 +590,15 @@ document.addEventListener('DOMContentLoaded', function () {
                                 // メッセージをクリア
                                 messageInput.value = '';
                                 updateSubmitButton();
-                                // 送信後にリロード＋パラメータ付与で自動スクロールを確実に発動
-                                var url = new URL(window.location);
-                                url.searchParams.set('chat_open', '1');
-                                url.searchParams.set('message_sent', '1');
-                                window.location.href = url.toString();
+                                
+                                // リダイレクトせずに、ページを再読み込みして自動スクロール
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 100);
+                                
+                                // 一時的にローカルストレージに自動スクロールフラグを保存
+                                localStorage.setItem('ktp_scroll_to_chat', 'true');
+                                
                                 return; // 以降の処理は不要
                             } else {
                                 alert('メッセージの送信に失敗しました: ' + (response.data || '不明なエラー'));

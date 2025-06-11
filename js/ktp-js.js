@@ -1,6 +1,17 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('KTPWP: DOM loaded, initializing toggle functionality');
 
+    // HTMLエスケープ関数
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>'"]/g, function (c) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c];
+        });
+    }
+
+    // グローバルスコープに追加
+    window.escapeHtml = escapeHtml;
+
     // スクロールタイマーを保存する変数（グローバルスコープ）
     window.scrollTimeouts = [];
 
@@ -179,6 +190,9 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('KTPWP: Staff chat button text updated to:', buttonText);
         };
 
+        // グローバルスコープにも追加
+        window.updateStaffChatButtonText = updateStaffChatButtonText;
+
         toggleBtn.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('KTPWP: Staff chat toggle button clicked');
@@ -221,6 +235,157 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.history.replaceState({}, '', newUrl);
                 }, 1000);
             });
+        }
+
+        // スタッフチャットフォームの送信処理を追加
+        var chatForm = document.getElementById('staff-chat-form');
+        if (chatForm) {
+            chatForm.addEventListener('submit', function (e) {
+                e.preventDefault(); // デフォルトのフォーム送信を防ぐ
+
+                var messageInput = document.getElementById('staff-chat-input');
+                var submitButton = document.getElementById('staff-chat-submit');
+                var orderId = document.querySelector('input[name="staff_chat_order_id"]')?.value;
+
+                if (!messageInput || messageInput.value.trim() === '') {
+                    messageInput.focus();
+                    return false;
+                }
+
+                if (!orderId) {
+                    return false;
+                }
+
+                // 送信ボタンを一時的に無効化
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = '送信中...';
+                    submitButton.style.opacity = '0.6';
+                }
+
+                // メッセージ入力欄も一時的に無効化
+                if (messageInput) {
+                    messageInput.disabled = true;
+                    messageInput.style.opacity = '0.6';
+                }
+
+                // AJAX でメッセージを送信
+                var xhr = new XMLHttpRequest();
+                var url = (typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.ajax_url) ? ktpwp_ajax.ajax_url :
+                    (typeof ajaxurl !== 'undefined') ? ajaxurl :
+                        window.location.origin + '/wp-admin/admin-ajax.php';
+                var params = 'action=send_staff_chat_message&order_id=' + orderId + '&message=' + encodeURIComponent(messageInput.value.trim());
+
+                // nonceを追加
+                if (typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.nonces && ktpwp_ajax.nonces.staff_chat) {
+                    params += '&_ajax_nonce=' + ktpwp_ajax.nonces.staff_chat;
+                }
+
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4) {
+                        // 送信ボタンとメッセージ入力欄を復元
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = '送信';
+                            submitButton.style.opacity = '1';
+                        }
+                        if (messageInput) {
+                            messageInput.disabled = false;
+                            messageInput.style.opacity = '1';
+                        }
+
+                        if (xhr.status === 200) {
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response.success) {
+                                    // メッセージをクリア
+                                    var messageText = messageInput.value.trim();
+                                    messageInput.value = '';
+                                    updateSubmitButton();
+                                    
+                                    // 新しいメッセージを動的に追加
+                                    var messagesContainer = document.getElementById('staff-chat-messages');
+                                    if (messagesContainer) {
+                                        var currentUser = (typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.current_user) ? 
+                                            ktpwp_ajax.current_user : 'スタッフ';
+                                        var currentTime = new Date().toLocaleString('ja-JP', {
+                                            year: 'numeric',
+                                            month: 'numeric', 
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                        
+                                        var messageDiv = document.createElement('div');
+                                        messageDiv.className = 'staff-chat-message scrollable';
+                                        messageDiv.innerHTML = 
+                                            '<div class="staff-chat-message-header">' +
+                                                '<span class="staff-chat-user-name">' + escapeHtml(currentUser) + '</span>' +
+                                                '<span class="staff-chat-timestamp">' + escapeHtml(currentTime) + '</span>' +
+                                            '</div>' +
+                                            '<div class="staff-chat-message-content">' + escapeHtml(messageText).replace(/\n/g, '<br>') + '</div>';
+                                        
+                                        messagesContainer.appendChild(messageDiv);
+                                        
+                                        // 最下部にスクロール
+                                        setTimeout(function() {
+                                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                        }, 100);
+                                        
+                                        // ボタンテキストを更新
+                                        updateStaffChatButtonText();
+                                    } else {
+                                        // フォールバック：ページリロード
+                                        localStorage.setItem('ktp_scroll_to_chat', 'true');
+                                        window.location.reload();
+                                    }
+                                    
+                                    return;
+                                } else {
+                                    alert('メッセージの送信に失敗しました: ' + (response.data || '不明なエラー'));
+                                }
+                            } catch (e) {
+                                alert('JSON解析エラー: ' + e.message);
+                            }
+                        } else {
+                            alert('サーバーエラーが発生しました');
+                        }
+                    }
+                };
+                xhr.send(params);
+            });
+            
+            // テキストエリアでのキーボード操作を追加
+            var messageInput = document.getElementById('staff-chat-input');
+            var submitButton = document.getElementById('staff-chat-submit');
+            
+            if (messageInput && submitButton) {
+                // 送信ボタンの状態を更新する関数
+                function updateSubmitButton() {
+                    var hasContent = messageInput.value.trim().length > 0;
+                    submitButton.disabled = !hasContent;
+                }
+                
+                // 入力時にボタン状態を更新
+                messageInput.addEventListener('input', updateSubmitButton);
+                
+                // キーボードショートカット
+                messageInput.addEventListener('keydown', function (e) {
+                    // Ctrl+Enter または Cmd+Enter で送信
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        if (!submitButton.disabled) {
+                            e.preventDefault();
+                            chatForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                        }
+                    }
+                });
+                
+                // 初期状態を設定
+                updateSubmitButton();
+            }
         }
 
         console.log('KTPWP: Staff chat toggle setup complete');
@@ -283,6 +448,40 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('KTPWP: Searching for staff chat toggle elements...');
     console.log('KTPWP: Staff chat toggle button:', !!staffChatToggleBtn, staffChatToggleBtn);
     console.log('KTPWP: Staff chat content:', !!staffChatContent, staffChatContent);
+
+    // ページ読み込み時にローカルストレージをチェックして自動スクロール
+    if (localStorage.getItem('ktp_scroll_to_chat') === 'true') {
+        localStorage.removeItem('ktp_scroll_to_chat');
+        
+        // チャットを開く
+        if (staffChatContent && staffChatToggleBtn) {
+            staffChatContent.style.display = 'block';
+            staffChatToggleBtn.setAttribute('aria-expanded', 'true');
+            
+            // 自動スクロール実行
+            setTimeout(function () {
+                // チャットセクションまでページをスクロール
+                var chatSection = document.querySelector('.staff-chat-title');
+                if (!chatSection) {
+                    chatSection = document.querySelector('.order_memo_box');
+                }
+                if (chatSection) {
+                    chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                
+                // メッセージエリアを最下部にスクロール
+                var messagesContainer = document.getElementById('staff-chat-messages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } else {
+                    // fallback: staff-chat-contentをスクロール
+                    if (staffChatContent) {
+                        staffChatContent.scrollTop = staffChatContent.scrollHeight;
+                    }
+                }
+            }, 500);
+        }
+    }
 
     if (staffChatToggleBtn && staffChatContent) {
         setupStaffChatToggle(staffChatToggleBtn, staffChatContent);

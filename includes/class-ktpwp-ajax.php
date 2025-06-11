@@ -170,6 +170,12 @@ class KTPWP_Ajax {
             'nonces' => array()
         );
 
+        // 現在のユーザー情報を追加
+        if (is_user_logged_in()) {
+            $current_user = wp_get_current_user();
+            $ajax_data['current_user'] = $current_user->display_name ? $current_user->display_name : $current_user->user_login;
+        }
+
         // 各種nonceの設定
         foreach ($this->nonce_names as $action => $nonce_name) {
             if ($action === 'project_name' && current_user_can('manage_options')) {
