@@ -385,8 +385,7 @@ class KTPWP_Assets {
         echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
         echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">' . "\n";
 
-        // FontAwesome Webfont のプリロードリンクを修正
-        echo '<link rel="preload" href="https://example.com/path/to/fontawesome-webfont.woff2" as="font" type="font/woff2" crossorigin="anonymous">' . "\n";
+        // FontAwesome Webfont のプリロードは不要なため削除
     }
 
     /**

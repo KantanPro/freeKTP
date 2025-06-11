@@ -84,19 +84,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 自動スクロール関数
         var scrollToBottom = function () {
-            // チャットが閉じている場合はスクロールしない
-            var chatContent = document.getElementById('staff-chat-content');
-            if (!chatContent || chatContent.style.display === 'none') {
-                }
-                return;
-            }
-
-            // チャットトグルボタンの状態もチェック
-            var toggleBtn = document.querySelector('.toggle-staff-chat');
-            if (toggleBtn && toggleBtn.getAttribute('aria-expanded') !== 'true') {
-                }
-                return;
-            }
+        // チャットが閉じている場合はスクロールしない
+        var chatContent = document.getElementById('staff-chat-content');
+        if (!chatContent || chatContent.style.display === 'none') {
+            return;
+        }
+        // チャットトグルボタンの状態もチェック
+        var toggleBtn = document.querySelector('.toggle-staff-chat');
+        if (toggleBtn && toggleBtn.getAttribute('aria-expanded') !== 'true') {
+            return;
+        }
 
             // 既存のスクロールタイマーをクリア
             }
@@ -111,61 +108,50 @@ document.addEventListener('DOMContentLoaded', function () {
             // メッセージエリアのスクロール処理
             var scrollMessages = function () {
                 // スクロール実行前に再度チャット状態をチェック
-                var currentChatContent = document.getElementById('staff-chat-content');
-                if (!currentChatContent || currentChatContent.style.display === 'none') {
-                    }
-                    return false;
-                }
-
-                var messagesContainer = document.getElementById('staff-chat-messages');
-                if (messagesContainer) {
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    return true;
-                } else {
-                    // fallback: staff-chat-contentをスクロール
-                    if (currentChatContent) {
-                        currentChatContent.scrollTop = currentChatContent.scrollHeight;
-                        return true;
-                    }
-                }
+            var currentChatContent = document.getElementById('staff-chat-content');
+            if (!currentChatContent || currentChatContent.style.display === 'none') {
                 return false;
+            }
+
+            var messagesContainer = document.getElementById('staff-chat-messages');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                return true;
+            } else {
+                // fallback: staff-chat-contentをスクロール
+                if (currentChatContent) {
+                    currentChatContent.scrollTop = currentChatContent.scrollHeight;
+                    return true;
+                }
+            }
+            return false;
             };
 
             // 複数回試行してスクロール（タイマーIDを保存）
-            }
-            window.scrollTimeouts.push(setTimeout(function () {
-                scrollMessages();
-            }, 300));
-
-            window.scrollTimeouts.push(setTimeout(function () {
-                scrollMessages();
-            }, 800));
-
-            window.scrollTimeouts.push(setTimeout(function () {
-                scrollMessages();
-            }, 1500));
-
-            }
-        };
+        window.scrollTimeouts.push(setTimeout(function () {
+            scrollMessages();
+        }, 300));
+        window.scrollTimeouts.push(setTimeout(function () {
+            scrollMessages();
+        }, 800));
+        window.scrollTimeouts.push(setTimeout(function () {
+            scrollMessages();
+        }, 1500));
+    };
 
         // 初期状態を設定（デフォルトで表示、chat_open=0の場合のみ非表示）
         if (shouldOpenChat) {
-            }
-            staffChatContent.style.display = 'block';
-            staffChatToggleBtn.setAttribute('aria-expanded', 'true');
-
-            // メッセージ送信後（message_sent=1パラメータ）の場合のみ自動スクロール
-            if (messageSent) {
-                scrollToBottom();
-
-                // スクロール実行後、URLからパラメータを削除
-                var newUrl = new URL(window.location);
-                newUrl.searchParams.delete('message_sent');
-                newUrl.searchParams.delete('chat_open'); // chat_openも削除
-                window.history.replaceState({}, '', newUrl);
-            }
+        staffChatContent.style.display = 'block';
+        staffChatToggleBtn.setAttribute('aria-expanded', 'true');
+        // メッセージ送信後（message_sent=1パラメータ）の場合のみ自動スクロール
+        if (messageSent) {
+            scrollToBottom();
+            // スクロール実行後、URLからパラメータを削除
+            var newUrl = new URL(window.location);
+            newUrl.searchParams.delete('message_sent');
+            newUrl.searchParams.delete('chat_open'); // chat_openも削除
+            window.history.replaceState({}, '', newUrl);
         } else {
-            }
             staffChatContent.style.display = 'none';
             staffChatToggleBtn.setAttribute('aria-expanded', 'false');
         }
@@ -190,24 +176,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         staffChatToggleBtn.addEventListener('click', function () {
             var expanded = staffChatToggleBtn.getAttribute('aria-expanded') === 'true';
-            if (expanded) {
-                // チャットを閉じる時：スクロール処理を停止
-                }
-                window.clearScrollTimeouts();
-                staffChatContent.style.display = 'none';
-                staffChatToggleBtn.setAttribute('aria-expanded', 'false');
-            } else {
-                }
-                staffChatContent.style.display = 'block';
-                staffChatToggleBtn.setAttribute('aria-expanded', 'true');
-
-                // チャットを開いた時に通知バッジを非表示
-                window.hideNewMessageNotification();
-
-                // 手動でチャットを開いた場合はスクロールしない（メッセージ送信後のみスクロール）
-                // scrollToBottom(); // この行をコメントアウト
-            }
-            updateStaffChatButtonText();
+        if (expanded) {
+            // チャットを閉じる時：スクロール処理を停止
+            window.clearScrollTimeouts();
+            staffChatContent.style.display = 'none';
+            staffChatToggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            staffChatContent.style.display = 'block';
+            staffChatToggleBtn.setAttribute('aria-expanded', 'true');
+            // チャットを開いた時に通知バッジを非表示
+            window.hideNewMessageNotification();
+            // 手動でチャットを開いた場合はスクロールしない（メッセージ送信後のみスクロール）
+            // scrollToBottom(); // この行をコメントアウト
+        }
+        updateStaffChatButtonText();
         });
 
         // 国際化ラベル
@@ -220,15 +202,21 @@ document.addEventListener('DOMContentLoaded', function () {
         // ページ読み込み完了後、メッセージ送信直後の場合のみ再度スクロール
         if (shouldOpenChat && messageSent) {
             window.addEventListener('load', function () {
-                setTimeout(function () {
+                let retry = 0;
+                function tryScroll() {
                     scrollToBottom();
-
-                    // 最終スクロール実行後、URLからパラメータを削除
-                    var newUrl = new URL(window.location);
-                    newUrl.searchParams.delete('message_sent');
-                    newUrl.searchParams.delete('chat_open');
-                    window.history.replaceState({}, '', newUrl);
-                }, 1000);
+                    retry++;
+                    if (retry < 5) {
+                        setTimeout(tryScroll, 400); // 400msごとに最大5回リトライ
+                    } else {
+                        // 最終スクロール実行後、URLからパラメータを削除
+                        var newUrl = new URL(window.location);
+                        newUrl.searchParams.delete('message_sent');
+                        newUrl.searchParams.delete('chat_open');
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                }
+                tryScroll();
             });
         }
     }
@@ -244,7 +232,6 @@ document.addEventListener('DOMContentLoaded', function () {
     tabs.forEach(function (tab) {
         var tabHref = tab.querySelector('a').getAttribute('href');
         var tabName = new URLSearchParams(tabHref.split('?')[1]).get('tab_name');
-
         if (tabName === currentTab) {
             tab.classList.add('active');
         } else {
@@ -260,10 +247,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // chat_open=1 または message_sent以外のchat_openパラメータがある場合は削除
     if (hasChatOpen && hasChatOpen !== '0' && !hasMessageSent) {
-        }
-        var cleanUrl = new URL(window.location);
-        cleanUrl.searchParams.delete('chat_open');
-        window.history.replaceState({}, '', cleanUrl);
+    var cleanUrl = new URL(window.location);
+    cleanUrl.searchParams.delete('chat_open');
+    window.history.replaceState({}, '', cleanUrl);
     }
 
     // 旧コード（互換性のために残しておく）
@@ -273,7 +259,9 @@ document.addEventListener('DOMContentLoaded', function () {
         defaultTab.classList.add('active');
         defaultContent.classList.add('active');
     }
-});
+}); // ←ここでDOMContentLoadedのfunctionを閉じる
+
+// ======================
 
 // 削除ボタンを押したときの確認ダイアログ（フォームベース削除対応）
 function confirmDelete(formElement) {
@@ -290,23 +278,51 @@ function confirmDeleteLegacy(id) {
     if (confirm("Are you sure you want to delete this item?")) {
         window.location.href = "?tab_name=" + tab_name + "&data_id=" + id + "&query_post=" + query_post;
     }
-}
+}Ï
 
 // ログアウト時にログイン中のユーザーを表示する
 jQuery(document).ready(function ($) {
     $('#logout_link').click(function (e) {
         e.preventDefault();
-
         $.post(ajaxurl, { action: 'get_logged_in_users' }, function (response) {
             var users = JSON.parse(response);
             var users_html = users.join('、');
             $('.ktp_header').html(users_html);
         });
-
         window.location.href = $(this).attr('href');
     });
 });
 
+// 削除ボタンを押したときの確認ダイアログ（フォームベース削除対応）
+function confirmDelete(formElement) {
+    if (confirm("本当に削除しますか？この操作は元に戻せません。")) {
+        return true; // フォーム送信を続行
+    }
+    return false; // フォーム送信をキャンセル
+}
+//
+// 旧式の削除機能（下位互換性のため残す）
+function confirmDeleteLegacy(id) {
+    var tab_name = "your_tab_name"; // Replace "your_tab_name" with the actual tab name
+    var query_post = "your_query_post"; // Replace "your_query_post" with the actual query post
+    if (confirm("Are you sure you want to delete this item?")) {
+        window.location.href = "?tab_name=" + tab_name + "&data_id=" + id + "&query_post=" + query_post;
+    }
+}
+//
+// ログアウト時にログイン中のユーザーを表示する
+jQuery(document).ready(function ($) {
+    $('#logout_link').click(function (e) {
+        e.preventDefault();
+        $.post(ajaxurl, { action: 'get_logged_in_users' }, function (response) {
+            var users = JSON.parse(response);
+            var users_html = users.join('、');
+            $('.ktp_header').html(users_html);
+        });
+        window.location.href = $(this).attr('href');
+    });
+});
+//
 // ポップアップ要素を作成
 var popupElement = document.createElement('div');
 popupElement.id = 'popupElement';
@@ -498,32 +514,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.origin + '/wp-admin/admin-ajax.php';
             var params = 'action=send_staff_chat_message&order_id=' + orderId + '&message=' + encodeURIComponent(messageInput.value.trim());
 
-            // デバッグ情報出力
-                url: url,
-                orderId: orderId,
-                message: messageInput.value.trim(),
-                hasKtpwpAjax: typeof ktpwp_ajax !== 'undefined',
-                hasNonces: typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.nonces,
-                hasStaffChatNonce: typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.nonces && ktpwp_ajax.nonces.staff_chat
-            });
-
             // nonceを追加
             if (typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.nonces && ktpwp_ajax.nonces.staff_chat) {
                 params += '&_ajax_nonce=' + ktpwp_ajax.nonces.staff_chat;
-            } else {
-                // nonceがなくても送信を試行（サーバー側でログインチェックに依存）
             }
 
             xhr.open('POST', url, true);
             xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
-
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
-                        status: xhr.status,
-                        responseText: xhr.responseText.substring(0, 500) + (xhr.responseText.length > 500 ? '...' : '')
-                    });
-
                     // 送信ボタンを復元
                     if (submitButton) {
                         submitButton.disabled = false;
@@ -531,26 +531,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     if (xhr.status === 200) {
-                        // 詳細なレスポンス分析
-                            Array.from(xhr.responseText.substring(0, 100))
-                                .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
-                                .join(' '));
-
                         try {
                             var response = JSON.parse(xhr.responseText);
-
                             if (response.success) {
                                 // メッセージをクリア
                                 messageInput.value = '';
                                 updateSubmitButton();
-
-                                // 新しいメッセージを即座に取得
-                                setTimeout(pollNewMessages, 100);
+                                // 送信後にリロード＋パラメータ付与で自動スクロールを確実に発動
+                                var url = new URL(window.location);
+                                url.searchParams.set('chat_open', '1');
+                                url.searchParams.set('message_sent', '1');
+                                window.location.href = url.toString();
+                                return; // 以降の処理は不要
                             } else {
                                 alert('メッセージの送信に失敗しました: ' + (response.data || '不明なエラー'));
                             }
                         } catch (e) {
-
                             // より具体的なエラー情報を表示
                             alert('JSON解析エラー: ' + e.message + '\nレスポンス長: ' + xhr.responseText.length);
                         }
@@ -559,10 +555,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             };
-
             xhr.send(params);
         });
-    }
+    // ← 不要な閉じカッコ削除
 
     // テキストエリアのリアルタイム検証
     var messageInput = document.getElementById('staff-chat-input');
@@ -573,7 +568,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var hasContent = messageInput.value.trim().length > 0;
             submitButton.disabled = !hasContent;
         }
-
         messageInput.addEventListener('input', updateSubmitButton);
         messageInput.addEventListener('keydown', function (e) {
             // Ctrl+Enter または Cmd+Enter で送信
@@ -587,7 +581,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
-
         // 初期状態を設定
         updateSubmitButton();
     }
@@ -597,7 +590,6 @@ document.addEventListener('DOMContentLoaded', function () {
         mutations.forEach(function (mutation) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 // 新しいメッセージが追加された場合、チャットが開いていればスクロール
-                }
                 scrollToBottom();
             }
         });
@@ -610,249 +602,76 @@ document.addEventListener('DOMContentLoaded', function () {
             subtree: true
         });
     }
-});
+// ここで不要な閉じカッコを削除
 
 // スタッフチャット関連の処理
-if (document.getElementById('staff-chat-messages')) {
-// TODO: ポーリング機能は将来的に実装予定
-// 現在はサーバー側のAJAXエンドポイントが未実装のため、一時的に無効化
-
-/*
-// 最後のメッセージタイムスタンプを保持
-var lastMessageTime = null;
-var isPollingActive = false;
-
-// 最新メッセージをポーリングで取得
-function pollNewMessages() {
-    }
-
-    if (isPollingActive) {
-        }
-        return; // 既にポーリング中の場合はスキップ
-    }
-
-    // チャットが閉じている場合はポーリングしない
-    var chatContent = document.getElementById('staff-chat-content');
-    if (!chatContent || chatContent.style.display === 'none') {
-        }
-        return;
-    }
-
-    var orderId = document.querySelector('input[name="staff_chat_order_id"]')?.value;
-    if (!orderId) {
-        }
-        return;
-    }
-
-            orderId: orderId,
-            lastMessageTime: lastMessageTime
-        });
-    }
-
-    isPollingActive = true;
-
-    // 最後のメッセージ時刻を取得
-    var lastMessageElement = document.querySelector('.staff-chat-message:last-child [data-timestamp]');
-    if (lastMessageElement) {
-        lastMessageTime = lastMessageElement.getAttribute('data-timestamp');
-    }
-
-    // AJAX リクエスト（簡易版 - 実際の実装では WordPress AJAX API を使用）
-    var xhr = new XMLHttpRequest();
-    var url = ajaxurl || window.location.href; // WordPress AJAX URL
-
-    // ajaxurl が未定義の場合は警告を出力
-    if (typeof ajaxurl === 'undefined') {
-        }
-    }
-
-    var params = 'action=get_latest_staff_chat&order_id=' + orderId;
-    if (lastMessageTime) {
-        params += '&last_time=' + encodeURIComponent(lastMessageTime);
-    }
-
-    // nonceを追加
-    if (typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.nonces && ktpwp_ajax.nonces.staff_chat) {
-        params += '&_ajax_nonce=' + ktpwp_ajax.nonces.staff_chat;
-    } else {
-        // nonce が見つからない場合はエラーログを出力してリクエストを中止
-        }
-        isPollingActive = false;
-        return;
-    }
-
-    xhr.open('POST', url, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            isPollingActive = false;
-
-                    status: xhr.status,
-                    statusText: xhr.statusText,
-                    responseLength: xhr.responseText.length,
-                    headers: xhr.getAllResponseHeaders()
-                });
-            }
-
-            if (xhr.status === 200) {
-                try {
-                    }
-
-                    // レスポンステキストが空の場合の処理
-                    if (!xhr.responseText || xhr.responseText.trim() === '') {
-                        return;
-                    }
-
-                    // WordPressの典型的なエラーレスポンス（"0"）の検出
-                    if (xhr.responseText.trim() === '0') {
-                        return;
-                    }
-
-                    // レスポンスがJSONで始まっていない場合の警告
-                    const trimmedResponse = xhr.responseText.trim();
-                    if (!trimmedResponse.startsWith('{') && !trimmedResponse.startsWith('[')) {
-                            alert('pollNewMessages: 無効なレスポンス形式\n開始: ' + trimmedResponse.substring(0, 100));
-                        }
-                        return;
-                    }
-
-                    var response = JSON.parse(xhr.responseText);
-
-                    }
-
-                    if (response.success && response.data && response.data.length > 0) {
-                        // 新しいメッセージをDOMに追加
-                        appendNewMessages(response.data);
-                        scrollToBottom();
-
-                        // チャットが閉じている場合は通知バッジを表示
-                        var chatContent = document.getElementById('staff-chat-content');
-                        if (chatContent && chatContent.style.display === 'none') {
-                            showNewMessageNotification(response.data.length);
-                        }
-                    } else if (response.success === false) {
-                        // サーバーサイドエラーの場合
-                    }
-                    // response.success が true で data が空の場合は新しいメッセージがないので正常
-
-                } catch (e) {
-
-                    // レスポンステキストの詳細分析
-                    if (xhr.responseText) {
-
-                        // 制御文字の検出
-                        var controlChars = xhr.responseText.match(/[\x00-\x1F\x7F]/g);
-                        if (controlChars) {
-                        }
-
-                        // HTMLタグの検出（WordPressのエラーページやプラグイン干渉）
-                        if (xhr.responseText.includes('<html>') || xhr.responseText.includes('<!DOCTYPE')) {
-                        }
-                    }
-
-                    // ユーザーへの詳細なエラー表示は本番環境では控える
-                        alert('pollNewMessages JSON解析エラー: ' + e.message + '\nレスポンス長: ' + xhr.responseText.length + '\n最初の100文字: ' + xhr.responseText.substring(0, 100));
-                    }
-                }
-            } else {
-            }
-        }
-    };
-
-    xhr.send(params);
-}
-
-// 新しいメッセージをDOMに追加（スクロール可能エリアのみ）
-function appendNewMessages(messages) {
-    var messagesContainer = document.getElementById('staff-chat-messages');
-    if (!messagesContainer) return;
-
-    messages.forEach(function(message) {
-        // 初期メッセージ（第1行目）はスキップ（固定ヘッダーで既に表示済み）
-        if (message.is_initial === '1' || message.is_initial === 1) {
-            return;
-        }
-
-        // 2行目以降のメッセージのみ追加
-        var messageDiv = document.createElement('div');
-        messageDiv.className = 'staff-chat-message scrollable';
-
-        var formattedTime = new Date(message.created_at).toLocaleString('ja-JP');
-
-        messageDiv.innerHTML =
-            '<div class="staff-chat-message-header">' +
-            '<span class="staff-chat-avatar-wrapper">' +
-            '<img src="" alt="' + escapeHtml(message.user_display_name) + '" class="staff-chat-wp-avatar" width="24" height="24">' +
-            '</span>' +
-            '<span class="staff-chat-user-name">' + escapeHtml(message.user_display_name) + '</span>' +
-            '<span class="staff-chat-timestamp" data-timestamp="' + message.created_at + '">' + formattedTime + '</span>' +
-            '</div>' +
-            '<div class="staff-chat-content">' + escapeHtml(message.message).replace(/\n/g, '<br>') + '</div>';
-
-        messagesContainer.appendChild(messageDiv);
+// HTMLエスケープ関数
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c];
     });
 }
 
-// HTMLエスケープ関数
-function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// 5秒ごとに新しいメッセージをポーリング
-}
-setInterval(pollNewMessages, 5000);
+// appendNewMessages: 新着メッセージをDOMに追加する（例）
+function appendNewMessages(messages) {
+    var messagesContainer = document.getElementById('staff-chat-messages');
+    if (!messagesContainer || !Array.isArray(messages)) return;
+    messages.forEach(function(msg) {
+        var div = document.createElement('div');
+        div.className = 'staff-chat-message scrollable';
+        div.innerHTML =
+            '<div class="staff-chat-message-header">' +
+                '<span class="staff-chat-user-name">' + escapeHtml(msg.user_display_name) + '</span>' +
+                '<span class="staff-chat-timestamp">' + escapeHtml(msg.created_at) + '</span>' +
+            '</div>' +
+            '<div class="staff-chat-message-content">' + escapeHtml(msg.message) + '</div>';
+        messagesContainer.appendChild(div);
+    });
 }
 
 // 新しいメッセージ通知バッジ機能
-// 新しいメッセージ通知バッジを表示
 function showNewMessageNotification(newMessageCount) {
-var toggleBtn = document.getElementById('staff-chat-toggle-btn');
-if (!toggleBtn) return;
-
-var existingBadge = toggleBtn.querySelector('.staff-chat-notification-badge');
-var existingCount = toggleBtn.querySelector('.staff-chat-message-count');
-
-if (!existingBadge) {
-    // 通知バッジを作成
-    var badge = document.createElement('span');
-    badge.className = 'staff-chat-notification-badge';
-    badge.textContent = '●';
-    badge.style.color = '#ff4444';
-    badge.style.marginLeft = '8px';
-    badge.style.fontSize = '16px';
-    badge.style.animation = 'pulse 1s infinite';
-
-    // メッセージカウント表示がある場合はその前に、ない場合は最後に追加
-    if (existingCount) {
-        toggleBtn.insertBefore(badge, existingCount);
-    } else {
-        toggleBtn.appendChild(badge);
+    var toggleBtn = document.getElementById('staff-chat-toggle-btn');
+    if (!toggleBtn) return;
+    var existingBadge = toggleBtn.querySelector('.staff-chat-notification-badge');
+    var existingCount = toggleBtn.querySelector('.staff-chat-message-count');
+    if (!existingBadge) {
+        // 通知バッジを作成
+        var badge = document.createElement('span');
+        badge.className = 'staff-chat-notification-badge';
+        badge.textContent = '●';
+        badge.style.color = '#ff4444';
+        badge.style.marginLeft = '8px';
+        badge.style.fontSize = '16px';
+        badge.style.animation = 'pulse 1s infinite';
+        // メッセージカウント表示がある場合はその前に、ない場合は最後に追加
+        if (existingCount) {
+            toggleBtn.insertBefore(badge, existingCount);
+        } else {
+            toggleBtn.appendChild(badge);
+        }
     }
-}
-
-// メッセージカウントも更新
-if (existingCount) {
-    var currentCount = parseInt(existingCount.textContent.replace(/[()]/g, '')) || 0;
-    existingCount.textContent = '(' + (currentCount + newMessageCount) + ')';
-}
+    // メッセージカウントも更新
+    if (existingCount) {
+        var currentCount = parseInt(existingCount.textContent.replace(/[()]/g, '')) || 0;
+        existingCount.textContent = '(' + (currentCount + newMessageCount) + ')';
+    }
 }
 
 // ページ離脱時のクリーンアップ処理
 window.addEventListener('beforeunload', function () {
 // スクロールタイマーをクリア
-if (window.clearScrollTimeouts) {
-    window.clearScrollTimeouts();
-}
+    if (window.clearScrollTimeouts) {
+        window.clearScrollTimeouts();
+    }
 });
 
 // タブ切り替え時（ページが非表示になった時）のクリーンアップ処理
 document.addEventListener('visibilitychange', function () {
-if (document.hidden && window.clearScrollTimeouts) {
-    window.clearScrollTimeouts();
-}
+    if (document.hidden && window.clearScrollTimeouts) {
+        window.clearScrollTimeouts();
+    }
 });
 
 // グローバルスコープで通知を表示する関数
@@ -871,9 +690,8 @@ setTimeout(function () {
 }, 3000);
 };
 
+
 // DOMContentLoaded イベントで showSuccessNotification を呼び出す
 window.addEventListener('DOMContentLoaded', function () {
-if (typeof showSuccessNotification === 'function') {
-} else {
-}
+    // 何もしない（ダミー）
 });
