@@ -810,6 +810,9 @@ class Kntan_Order_Class {
             // 関連するコスト項目を削除
             $this->Delete_Cost_Items( $order_id_to_delete );
 
+            // 関連するスタッフチャットメッセージを削除
+            $this->Delete_Staff_Chat_Messages( $order_id_to_delete );
+
             // 受注書を削除
             $deleted = $wpdb->delete($table_name, array('id' => $order_id_to_delete), array('%d'));
 
@@ -820,14 +823,29 @@ class Kntan_Order_Class {
                     1
                 ) );
 
-                $next_order_id = $latest_order ? $latest_order->id : 0;
+                // 現在のページの基本URLを取得（from_clientなどのパラメータを除外）
+                global $wp;
+                $current_page_id = get_queried_object_id();
+                $base_url = get_permalink($current_page_id);
+                if (!$base_url) {
+                    $base_url = home_url(add_query_arg(array(), $wp->request));
+                }
 
-                // wp_redirectを使用した統一されたリダイレクト
-                $redirect_url = add_query_arg(array(
-                    'tab_name' => 'order',
-                    'order_id' => $next_order_id,
-                    'message' => 'deleted'
-                ), wp_get_referer());
+                if ($latest_order) {
+                    $next_order_id = $latest_order->id;
+                    // 他の受注書が存在する場合は、その受注書にリダイレクト
+                    $redirect_url = add_query_arg(array(
+                        'tab_name' => 'order',
+                        'order_id' => $next_order_id,
+                        'message' => 'deleted'
+                    ), $base_url);
+                } else {
+                    // すべての受注書が削除された場合は、受注書なしの状態でリダイレクト
+                    $redirect_url = add_query_arg(array(
+                        'tab_name' => 'order',
+                        'message' => 'deleted_all'
+                    ), $base_url);
+                }
 
                 wp_redirect($redirect_url);
                 exit;
@@ -846,8 +864,11 @@ class Kntan_Order_Class {
 
         // 重要なチェックポイント6を追加
 
+        // 削除処理が完了した場合は新規受注書作成をスキップ
+        $deletion_completed = isset($_GET['message']) && ($_GET['message'] === 'deleted' || $_GET['message'] === 'deleted_all');
+
         // 得意先タブから遷移してきた場合（新規受注書作成）
-        if ($from_client === 1 && $customer_name !== '') {
+        if ($from_client === 1 && $customer_name !== '' && !$deletion_completed) {
             // セッションスタート（複製情報にアクセスするため - 下位互換性のため）
             if (session_status() !== PHP_SESSION_ACTIVE) {
                 session_start();
@@ -929,8 +950,11 @@ class Kntan_Order_Class {
 
         // 重要なチェックポイント7を追加
 
-        // 受注書IDが指定されていない場合は最新の受注書IDを取得
-        if ($order_id === 0) {
+        // 削除処理完了後は受注書の自動取得をスキップ
+        $deletion_completed = isset($_GET['message']) && ($_GET['message'] === 'deleted' || $_GET['message'] === 'deleted_all');
+        
+        // 受注書IDが指定されていない場合は最新の受注書IDを取得（削除完了後は除く）
+        if ($order_id === 0 && !$deletion_completed) {
             $latest_order = $wpdb->get_row( $wpdb->prepare(
                 "SELECT id FROM `{$table_name}` ORDER BY time DESC LIMIT %d",
                 1
@@ -1624,6 +1648,38 @@ $content .= '</div>';
         $ajax_handler = KTPWP_Ajax::get_instance();
         $ajax_handler->ajax_create_new_item();
     }
+
+    /**
+     * Delete staff chat messages for a specific order
+     *
+     * @since 1.0.0
+     * @param int $order_id Order ID
+     * @return bool True on success, false on failure
+     */
+    public function Delete_Staff_Chat_Messages( $order_id ) {
+        if ( ! $order_id || $order_id <= 0 ) {
+            return false;
+        }
+
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ktp_order_staff_chat';
+
+        // Delete all staff chat messages for this order
+        $result = $wpdb->delete(
+            $table_name,
+            array( 'order_id' => $order_id ),
+            array( '%d' )
+        );
+
+        if ( $result === false ) {
+            error_log( 'KTPWP: Failed to delete staff chat messages for order ID ' . $order_id . ': ' . $wpdb->last_error );
+            return false;
+        }
+
+        error_log( 'KTPWP: Successfully deleted ' . $result . ' staff chat messages for order ID ' . $order_id );
+        return true;
+    }
+
 } // End of Kntan_Order_Class
 
 } // class_exists check
