@@ -1,3 +1,25 @@
+// スタッフチャットのtextareaでEnter単独は改行、Ctrl/Cmd+Enterで送信
+document.addEventListener('DOMContentLoaded', function () {
+  var chatForm = document.getElementById('staff-chat-form');
+  var messageInput = document.getElementById('staff-chat-input');
+  var submitButton = document.getElementById('staff-chat-submit');
+  if (chatForm && messageInput && submitButton) {
+    messageInput.addEventListener('keydown', function (e) {
+      // Ctrl+EnterまたはCmd+Enterで送信
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!submitButton.disabled) {
+          if (typeof chatForm.requestSubmit === 'function') {
+            chatForm.requestSubmit();
+          } else {
+            chatForm.submit();
+          }
+        }
+      }
+      // Enter単独は改行（デフォルト動作）
+    });
+  }
+});
 document.addEventListener('DOMContentLoaded', function () {
   // スクロールタイマーを保存する変数（グローバルスコープ）
   window.scrollTimeouts = [];
