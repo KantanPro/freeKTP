@@ -618,7 +618,9 @@ return '<div class="ktpwp-reference-content">'
     }
 }
 
-// Initialize the plugin reference
-KTPWP_Plugin_Reference::get_instance();
+// Initialize the plugin reference only after init (not on plugin load)
+add_action('init', function() {
+    KTPWP_Plugin_Reference::get_instance();
+});
 
 } // End if class_exists

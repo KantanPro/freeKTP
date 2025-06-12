@@ -112,22 +112,26 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
     error_log( 'KTPWP Plugin: Loading started' );
 }
 
-// メインクラスの初期化
-if ( class_exists( 'KTPWP_Main' ) ) {
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( 'KTPWP Plugin: KTPWP_Main class found, initializing...' );
+// メインクラスの初期化はinit以降に遅延（翻訳エラー防止）
+add_action('init', function() {
+    if ( class_exists( 'KTPWP_Main' ) ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'KTPWP Plugin: KTPWP_Main class found, initializing (delayed)...' );
+        }
+        KTPWP_Main::get_instance();
+    } else {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'KTPWP Plugin: KTPWP_Main class not found' );
+        }
     }
-    KTPWP_Main::get_instance();
-} else {
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( 'KTPWP Plugin: KTPWP_Main class not found' );
-    }
-}
+});
 
-// プラグインリファレンス機能の初期化
-if ( class_exists( 'KTPWP_Plugin_Reference' ) ) {
-    KTPWP_Plugin_Reference::get_instance();
-}
+// プラグインリファレンス機能の初期化はinit以降に遅延（翻訳エラー防止）
+add_action('init', function() {
+    if ( class_exists( 'KTPWP_Plugin_Reference' ) ) {
+        KTPWP_Plugin_Reference::get_instance();
+    }
+});
 
 /**
  * セキュリティ強化: REST API制限 & HTTPヘッダー追加
@@ -147,7 +151,7 @@ function ktpwp_restrict_rest_api( $result ) {
     if ( ! is_user_logged_in() ) {
         return new WP_Error(
             'rest_forbidden',
-            __( 'REST APIはログインユーザーのみ利用可能です。', 'ktpwp' ),
+            'REST APIはログインユーザーのみ利用可能です。',
             array( 'status' => 403 )
         );
     }
@@ -176,11 +180,7 @@ add_action( 'admin_init', 'ktpwp_add_security_headers' );
 
 register_activation_hook(KTPWP_PLUGIN_FILE, array('KTP_Settings', 'activate'));
 
-// 翻訳ファイルの読み込み（WordPressガイドラインに準拠）
-function ktpwp_load_textdomain() {
-    load_plugin_textdomain( 'ktpwp', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
-}
-add_action( 'init', 'ktpwp_load_textdomain' );
+
 
 // リダイレクト処理クラス
 class KTPWP_Redirect {
@@ -415,10 +415,10 @@ function ktpwp_scripts_and_styles() {
     wp_add_inline_script('ktp-js', 'var ktpwpDebugMode = ' . json_encode($debug_mode) . ';');
 
     // コスト項目トグル用の国際化ラベルをJSに渡す
-    wp_add_inline_script('ktp-js', 'var ktpwpCostShowLabel = ' . json_encode(esc_html__('表示', 'ktpwp')) . ';');
-    wp_add_inline_script('ktp-js', 'var ktpwpCostHideLabel = ' . json_encode(esc_html__('非表示', 'ktpwp')) . ';');
-    wp_add_inline_script('ktp-js', 'var ktpwpStaffChatShowLabel = ' . json_encode(esc_html__('表示', 'ktpwp')) . ';');
-    wp_add_inline_script('ktp-js', 'var ktpwpStaffChatHideLabel = ' . json_encode(esc_html__('非表示', 'ktpwp')) . ';');
+    wp_add_inline_script('ktp-js', 'var ktpwpCostShowLabel = ' . json_encode('表示') . ';');
+    wp_add_inline_script('ktp-js', 'var ktpwpCostHideLabel = ' . json_encode('非表示') . ';');
+    wp_add_inline_script('ktp-js', 'var ktpwpStaffChatShowLabel = ' . json_encode('表示') . ';');
+    wp_add_inline_script('ktp-js', 'var ktpwpStaffChatHideLabel = ' . json_encode('非表示') . ';');
 
     wp_register_style('ktp-css', plugins_url('css/styles.css', __FILE__) . '?v=' . time(), array(), KTPWP_PLUGIN_VERSION, 'all');
     wp_enqueue_style('ktp-css');
@@ -621,8 +621,8 @@ function KTPWP_Index(){
                 $user_sessions = WP_Session_Tokens::get_instance( $current_user->ID );
                 if ( $user_sessions && ! empty( $user_sessions->get_all() ) ) {
                     $reference_instance = KTPWP_Plugin_Reference::get_instance();
-                    $navigation_links = '　<a href="' . $logout_link . '">' . esc_html__('ログアウト', 'ktpwp') . '</a>'
-                        . '　<a href="' . $update_link_url . '">' . esc_html__('更新', 'ktpwp') . '</a>'
+                    $navigation_links = '　<a href="' . $logout_link . '">ログアウト</a>'
+                        . '　<a href="' . $update_link_url . '">更新</a>'
                         . '　' . $act_key
                         . $reference_instance->get_reference_link();
                 }
@@ -721,7 +721,7 @@ function KTPWP_Index(){
                 return $error;
             } else {
                 // ログインしているが権限がない場合
-                return '<div class="ktpwp-error">' . esc_html__('このコンテンツを表示する権限がありません。', 'ktpwp') . '</div>';
+                return '<div class="ktpwp-error">このコンテンツを表示する権限がありません。</div>';
             }
         }
     }

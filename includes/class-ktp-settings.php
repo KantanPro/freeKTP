@@ -232,7 +232,8 @@ class KTP_Settings {
         if ( false === get_option( $general_option_name ) ) {
             add_option( $general_option_name, array(
                 'plugin_name' => 'KTPWP',
-                'plugin_description' => __( 'カスタムプラグインの管理システムです。', 'ktpwp' ),
+                // 翻訳関数は使わず、プレーンテキストで初期化（WordPress 6.7+対応）
+                'plugin_description' => 'カスタムプラグインの管理システムです。',
                 'work_list_range' => 20,
                 'company_info' => ''
             ));
