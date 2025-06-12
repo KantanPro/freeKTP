@@ -1411,7 +1411,8 @@ class KTP_Settings {
     public function company_info_callback() {
         $options = get_option( 'ktp_general_settings' );
         $value = isset( $options['company_info'] ) ? $options['company_info'] : '';
-        
+        // nullや非文字列の場合は空文字列に変換
+        $value = is_string($value) ? $value : '';
         // WordPress Visual Editor (TinyMCE) を表示
         $editor_id = 'company_info_editor';
         $settings = array(
@@ -1426,7 +1427,6 @@ class KTP_Settings {
             ),
             'default_editor' => 'tinymce',
         );
-        
         wp_editor( $value, $editor_id, $settings );
         ?>
         <div style="font-size:12px;color:#555;margin-top:8px;">

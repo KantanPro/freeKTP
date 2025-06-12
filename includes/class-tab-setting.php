@@ -116,6 +116,8 @@ class KTPWP_Setting_Class {
 
         // Add template editor and preview
         ob_start();
+        // nullや非文字列の場合は空文字列に変換
+        $template_content = is_string($template_content) ? $template_content : '';
         wp_editor( $template_content, 'template_content', [
             'textarea_name' => 'template_content',
             'media_buttons' => true,

@@ -31,6 +31,9 @@ class KTPWP_Setting_Template {
             '_%user_name%_' => $customer_data['user_name'] ?? '担当 太郎',
         ];
 
+        // nullや非文字列の場合は空文字列に変換
+        $template_content = is_string($template_content) ? $template_content : '';
+
         return strtr( $template_content, $replace_words );
     }
 
