@@ -107,9 +107,21 @@ function ktpwp_autoload_classes() {
 // クラスの読み込み実行
 ktpwp_autoload_classes();
 
+// デバッグログ: プラグイン読み込み開始
+if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+    error_log( 'KTPWP Plugin: Loading started' );
+}
+
 // メインクラスの初期化
 if ( class_exists( 'KTPWP_Main' ) ) {
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( 'KTPWP Plugin: KTPWP_Main class found, initializing...' );
+    }
     KTPWP_Main::get_instance();
+} else {
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( 'KTPWP Plugin: KTPWP_Main class not found' );
+    }
 }
 
 // プラグインリファレンス機能の初期化

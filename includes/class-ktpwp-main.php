@@ -158,6 +158,22 @@ class KTPWP_Main {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( 'KTPWP_Main: User does not have edit_posts capability. Skipping component initialization.' );
             }
+            
+            // Contact Form 7 連携は権限に関係なく初期化する（フロントエンドで必要）
+            if ( class_exists( 'KTPWP_Contact_Form' ) ) {
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'KTPWP_Main: KTPWP_Contact_Form class found, initializing...' );
+                }
+                $this->contact_form = KTPWP_Contact_Form::get_instance();
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'KTPWP_Main: KTPWP_Contact_Form initialized successfully (frontend)' );
+                }
+            } else {
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'KTPWP_Main: KTPWP_Contact_Form class not found' );
+                }
+            }
+            
             return;
         }
 
@@ -190,10 +206,17 @@ class KTPWP_Main {
             $this->security = KTPWP_Security::get_instance();
             $this->shortcodes = KTPWP_Shortcodes::get_instance();
             $this->redirect = KTPWP_Redirect::get_instance();
-            $this->contact_form = KTPWP_Contact_Form::get_instance();
             $this->github_updater = KTPWP_GitHub_Updater::get_instance();
             $this->database = KTPWP_Database::get_instance();
             */
+
+            // Contact Form 7連携の初期化
+            if ( class_exists( 'KTPWP_Contact_Form' ) ) {
+                $this->contact_form = KTPWP_Contact_Form::get_instance();
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'KTPWP_Main: KTPWP_Contact_Form initialized successfully' );
+                }
+            }
         } catch ( Exception $e ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( 'KTPWP_Main init_components error: ' . $e->getMessage() );

@@ -73,7 +73,7 @@ class KTPWP_Order {
      */
     public function create_order_table() {
         global $wpdb;
-        $my_table_version = '1.1';
+        $my_table_version = '1.2'; // バージョンアップ: company_nameカラム追加
         $table_name = $wpdb->prefix . 'ktp_order';
         $charset_collate = $wpdb->get_charset_collate();
 
@@ -82,6 +82,7 @@ class KTPWP_Order {
             'time BIGINT(11) DEFAULT 0 NOT NULL',
             'client_id MEDIUMINT(9) DEFAULT NULL',
             'customer_name VARCHAR(100) NOT NULL',
+            'company_name VARCHAR(100) NOT NULL DEFAULT ""',
             'user_name TINYTEXT',
             'project_name VARCHAR(255)',
             'progress TINYINT(1) NOT NULL DEFAULT 1',

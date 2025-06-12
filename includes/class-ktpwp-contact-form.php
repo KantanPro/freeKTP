@@ -53,8 +53,19 @@ class KTPWP_Contact_Form {
      * コンストラクタ
      */
     private function __construct() {
+        // デバッグログ: コンストラクタ呼び出し
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: Contact Form constructor called');
+        }
+        
         $this->init_config();
+        
+        // すぐにフックを初期化してみる
         $this->init_hooks();
+        
+        // Contact Form 7の読み込みを待つ
+        add_action('plugins_loaded', array($this, 'init_hooks_after_plugins_loaded'));
+        add_action('init', array($this, 'init_hooks_after_init'));
     }
     
     /**
@@ -86,8 +97,48 @@ class KTPWP_Contact_Form {
     private function init_hooks() {
         // Contact Form 7が有効な場合のみフックを追加
         if (class_exists('WPCF7_ContactForm')) {
+            // 複数のフックを試してみる
             add_action('wpcf7_mail_sent', array($this, 'capture_contact_form_data'));
+            add_action('wpcf7_before_send_mail', array($this, 'capture_contact_form_data_before'));
+            add_action('wpcf7_submit', array($this, 'capture_contact_form_data_submit'), 10, 2);
+            
+            // より早いタイミングのフックも追加
+            add_filter('wpcf7_posted_data', array($this, 'capture_posted_data'));
+            
+            // デバッグログ: フック登録成功
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP CF7: All hooks registered successfully');
+            }
+        } else {
+            // デバッグログ: Contact Form 7が見つからない
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP CF7: WPCF7_ContactForm class not found');
+            }
         }
+    }
+    
+    /**
+     * プラグイン読み込み後のフック初期化
+     */
+    public function init_hooks_after_plugins_loaded() {
+        // デバッグログ: plugins_loaded後の処理
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: init_hooks_after_plugins_loaded called');
+        }
+        
+        $this->init_hooks();
+    }
+    
+    /**
+     * init後のフック初期化
+     */
+    public function init_hooks_after_init() {
+        // デバッグログ: init後の処理
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: init_hooks_after_init called');
+        }
+        
+        $this->init_hooks();
     }
     
     /**
@@ -96,16 +147,32 @@ class KTPWP_Contact_Form {
      * @param WPCF7_ContactForm $contact_form Contact Form 7のフォームオブジェクト
      */
     public function capture_contact_form_data($contact_form) {
+        // デバッグログ: メソッド呼び出し確認
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: capture_contact_form_data method called');
+        }
+        
         $submission = WPCF7_Submission::get_instance();
         
         if (!$submission) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP CF7: No submission instance found');
+            }
             return;
         }
         
         $posted_data = $submission->get_posted_data();
         
         if (empty($posted_data)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP CF7: Posted data is empty');
+            }
             return;
+        }
+        
+        // デバッグログ: 受信データを記録
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7 Posted Data: ' . print_r($posted_data, true));
         }
         
         // データを処理してデータベースに保存
@@ -115,6 +182,12 @@ class KTPWP_Contact_Form {
         if ($client_id) {
             // 受注データも作成
             $order_data = $this->prepare_order_data($posted_data, $client_id);
+            
+            // デバッグログ: 受注データを記録
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP CF7 Prepared Order Data: ' . print_r($order_data, true));
+            }
+            
             $this->save_order_data($order_data);
             
             // クッキー設定
@@ -175,13 +248,24 @@ class KTPWP_Contact_Form {
      */
     private function prepare_order_data($posted_data, $client_id) {
         $customer_name = $this->get_field_value($posted_data, $this->field_mapping['name']);
-        
+        $company_name = $this->get_field_value($posted_data, $this->field_mapping['company_name']);
+
+        // デバッグログ: フィールドマッピングの結果を記録
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7 Field Mapping Debug:');
+            error_log('  - customer_name (your-name): ' . $customer_name);
+            error_log('  - company_name (your_company_name): ' . $company_name);
+            error_log('  - field_mapping[name]: ' . print_r($this->field_mapping['name'], true));
+            error_log('  - field_mapping[company_name]: ' . print_r($this->field_mapping['company_name'], true));
+        }
+
         return array(
             'client_id' => $client_id,
-            'customer_name' => sanitize_text_field($customer_name),
+            'customer_name' => sanitize_text_field($company_name), // 修正: 会社名を設定
+            'company_name' => sanitize_text_field($company_name), // 修正: 正しい会社名を設定
+            'user_name' => sanitize_text_field($customer_name), // 修正: 担当者名を設定
             'project_name' => $this->default_values['project_name'],
             'progress' => $this->default_values['progress'],
-            'user_name' => $this->default_values['user_name'],
             'time' => time(),
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
@@ -279,12 +363,15 @@ class KTPWP_Contact_Form {
         
         $table_name = $wpdb->prefix . 'ktp_order';
         
+        // wpdb->insert() はキーによるマッピングを使用するため、
+        // formatの順序はorder_dataのキーの順序と一致させる
         $format = array(
             '%d', // client_id
-            '%s', // customer_name
+            '%s', // customer_name  
+            '%s', // company_name
+            '%s', // user_name
             '%s', // project_name
             '%d', // progress
-            '%s', // user_name
             '%d', // time
             '%s', // created_at
             '%s', // updated_at
@@ -432,5 +519,75 @@ class KTPWP_Contact_Form {
         }
         
         return true;
+    }
+    
+    /**
+     * Contact Form 7送信データをキャプチャ（before_send_mail用）
+     *
+     * @param WPCF7_ContactForm $contact_form Contact Form 7のフォームオブジェクト
+     */
+    public function capture_contact_form_data_before($contact_form) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: capture_contact_form_data_before method called');
+        }
+        
+        // メイン処理を呼び出し
+        $this->capture_contact_form_data($contact_form);
+    }
+    
+    /**
+     * Contact Form 7送信データをキャプチャ（submit用）
+     *
+     * @param WPCF7_ContactForm $contact_form Contact Form 7のフォームオブジェクト
+     * @param array $result 送信結果
+     */
+    public function capture_contact_form_data_submit($contact_form, $result) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: capture_contact_form_data_submit method called');
+            error_log('KTPWP CF7 Submit Result: ' . print_r($result, true));
+        }
+        
+        // 送信が成功した場合のみ処理
+        if (isset($result['status']) && $result['status'] === 'mail_sent') {
+            $this->capture_contact_form_data($contact_form);
+        }
+    }
+    
+    /**
+     * Contact Form 7のposted_dataフィルターをキャプチャ
+     *
+     * @param array $posted_data 送信データ
+     * @return array 変更されていないデータを返す
+     */
+    public function capture_posted_data($posted_data) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP CF7: capture_posted_data filter called');
+            error_log('KTPWP CF7 Posted Data Filter: ' . print_r($posted_data, true));
+        }
+        
+        // フィルターなので、データを変更せずに処理
+        if (!empty($posted_data)) {
+            // データを処理してデータベースに保存
+            $client_data = $this->prepare_client_data($posted_data);
+            $client_id = $this->save_client_data($client_data);
+            
+            if ($client_id) {
+                // 受注データも作成
+                $order_data = $this->prepare_order_data($posted_data, $client_id);
+                
+                // デバッグログ: 受注データを記録
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP CF7 Prepared Order Data (from filter): ' . print_r($order_data, true));
+                }
+                
+                $this->save_order_data($order_data);
+                
+                // クッキー設定
+                $this->set_client_cookie($client_id);
+            }
+        }
+        
+        // フィルターなので元のデータを返す
+        return $posted_data;
     }
 }
