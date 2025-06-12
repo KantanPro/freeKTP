@@ -97,17 +97,11 @@ class KTPWP_Contact_Form {
     private function init_hooks() {
         // Contact Form 7が有効な場合のみフックを追加
         if (class_exists('WPCF7_ContactForm')) {
-            // 複数のフックを試してみる
+            // 必要なフックのみ登録（重複登録防止）
             add_action('wpcf7_mail_sent', array($this, 'capture_contact_form_data'));
-            add_action('wpcf7_before_send_mail', array($this, 'capture_contact_form_data_before'));
-            add_action('wpcf7_submit', array($this, 'capture_contact_form_data_submit'), 10, 2);
-            
-            // より早いタイミングのフックも追加
-            add_filter('wpcf7_posted_data', array($this, 'capture_posted_data'));
-            
             // デバッグログ: フック登録成功
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('KTPWP CF7: All hooks registered successfully');
+                error_log('KTPWP CF7: Only wpcf7_mail_sent hook registered');
             }
         } else {
             // デバッグログ: Contact Form 7が見つからない
@@ -249,22 +243,25 @@ class KTPWP_Contact_Form {
     private function prepare_order_data($posted_data, $client_id) {
         $customer_name = $this->get_field_value($posted_data, $this->field_mapping['name']);
         $company_name = $this->get_field_value($posted_data, $this->field_mapping['company_name']);
+        $subject      = $this->get_field_value($posted_data, $this->field_mapping['subject']);
 
         // デバッグログ: フィールドマッピングの結果を記録
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('KTPWP CF7 Field Mapping Debug:');
             error_log('  - customer_name (your-name): ' . $customer_name);
             error_log('  - company_name (your_company_name): ' . $company_name);
+            error_log('  - subject (your-subject): ' . $subject);
             error_log('  - field_mapping[name]: ' . print_r($this->field_mapping['name'], true));
             error_log('  - field_mapping[company_name]: ' . print_r($this->field_mapping['company_name'], true));
+            error_log('  - field_mapping[subject]: ' . print_r($this->field_mapping['subject'], true));
         }
 
         return array(
             'client_id' => $client_id,
-            'customer_name' => sanitize_text_field($company_name), // 修正: 会社名を設定
-            'company_name' => sanitize_text_field($company_name), // 修正: 正しい会社名を設定
-            'user_name' => sanitize_text_field($customer_name), // 修正: 担当者名を設定
-            'project_name' => $this->default_values['project_name'],
+            'customer_name' => sanitize_text_field($company_name),
+            'company_name' => sanitize_text_field($company_name),
+            'user_name' => sanitize_text_field($customer_name),
+            'project_name' => !empty($subject) ? sanitize_text_field($subject) : $this->default_values['project_name'],
             'progress' => $this->default_values['progress'],
             'time' => time(),
             'created_at' => current_time('mysql'),
