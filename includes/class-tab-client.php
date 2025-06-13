@@ -315,7 +315,7 @@ class Kntan_Client_Class {
                // 最後のIDを取得して表示
                // $query = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
                // $last_id_row = $wpdb->get_row($query);
-               $query_last_id = $wpdb->prepare("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1", array());
+               $query_last_id = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
                $last_id_row = $wpdb->get_row($query_last_id);
                $client_id = $last_id_row ? $last_id_row->id : 1;
            }
@@ -646,7 +646,7 @@ class Kntan_Client_Class {
                 } else {
                     // 存在しなければ最大ID
                     // $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
-                    $query_max_id_cookie_fallback = $wpdb->prepare("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1", array());
+                    $query_max_id_cookie_fallback = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
                     $max_id_row = $wpdb->get_row($query_max_id_cookie_fallback);
                     $query_id = $max_id_row ? $max_id_row->id : '';
                 }
@@ -867,7 +867,7 @@ class Kntan_Client_Class {
             // 最後のIDを取得
             // $wpdb と $table_name がこのスコープで利用可能である必要がある
             if ( isset( $wpdb, $table_name ) ) {
-                $query = $wpdb->prepare( "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1", array() );
+                $query = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
                 $last_id_row = $wpdb->get_row($query);
                 $current_client_id = $last_id_row ? $last_id_row->id : 0;
             }
