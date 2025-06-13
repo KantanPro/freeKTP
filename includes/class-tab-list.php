@@ -197,12 +197,10 @@ class Kantan_List_Class {
             }
             $content .= '</ul>';
         } else {
-            $content .= '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #ffeef1 0%, #ffeff2 100%); border-radius: 6px; margin: 15px 0; color: #333333; font-weight: 500; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); display: flex; align-items: center; font-size: 14px;">'
-                . '<span style="margin-right: 10px; color: #ff6b8b; font-size: 18px;" class="material-symbols-outlined">search_off</span>'
-                . esc_html__('受注書データがありません。', 'ktpwp')
-                . '<span style="margin-left: 16px; font-size: 13px; color: #888;">'
-                . esc_html__('得意先タブで顧客情報を入力し受注書を作成してください', 'ktpwp')
-                . '</span>'
+            $content .= '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%); border-radius: 8px; margin: 18px 0; color: #333; font-weight: 600; box-shadow: 0 3px 12px rgba(0,0,0,0.07); display: flex; align-items: center; font-size: 15px; gap: 10px;">'
+                . '<span class="material-symbols-outlined" aria-label="データなし">search_off</span>'
+                . '<span style="font-size: 1em; font-weight: 600;">' . esc_html__('受注書データがありません。', 'ktpwp') . '</span>'
+                . '<span style="margin-left: 18px; font-size: 13px; color: #888;">' . esc_html__('得意先タブで顧客情報を入力し受注書を作成してください', 'ktpwp') . '</span>'
                 . '</div>';
         }
         // 進捗更新処理

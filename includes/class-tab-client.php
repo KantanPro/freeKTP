@@ -499,23 +499,22 @@ class Kntan_Client_Class {
                    $list_style = '';
                    $deleted_mark = '';
                    if ($client_status === '対象外') {
-                       $list_style = ' style="background-color: #ffe6e6; border-left: 3px solid #ff4444;"';
-                       $deleted_mark = '<span style="color: #ff4444; font-weight: bold; margin-right: 5px;">[削除済み]</span>';
-                   }
+           $list_style = ' style="background-color: #ffe6e6; border-left: 3px solid #ff4444;"';
+           $deleted_mark = '<span style="color: #ff4444; font-weight: bold; margin-right: 5px;">[削除済み]</span>';
+       }
 
-           $results[] = '<a href="' . $link_url . '" onclick="document.cookie = \'{$cookie_name}=\' + ' . $id . ';">'
-               . '<div class="ktp_data_list_item"' . $list_style . '>' . $deleted_mark . sprintf(esc_html__('ID: %1$s %2$s : %3$s : %4$s : 頻度(%5$s)', 'ktpwp'), $id, $company_name, $user_name, $client_status, $frequency) . '</div>'
-               . '</a>';
-               }
-           } else {
-           $results[] = '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #ffeef1 0%, #ffeff2 100%); border-radius: 6px; margin: 15px 0; color: #333333; font-weight: 500; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); display: flex; align-items: center; font-size: 14px;">'
-               . '<span style="margin-right: 10px; color: #ff6b8b; font-size: 18px;" class="material-symbols-outlined">search_off</span>'
-               . esc_html__('データーがありません。', 'ktpwp')
-               . '<span style="margin-left: 16px; font-size: 13px; color: #888;">'
-               . esc_html__('フォームに入力して更新してください。', 'ktpwp')
-               . '</span>'
-               . '</div>';
-           }
+       $results[] = '<a href="' . $link_url . '" onclick="document.cookie = \'{$cookie_name}=\' + ' . $id . ';">'
+           . '<div class="ktp_data_list_item"' . $list_style . '>' . $deleted_mark . sprintf(esc_html__('ID: %1$s %2$s : %3$s : %4$s : 頻度(%5$s)', 'ktpwp'), $id, $company_name, $user_name, $client_status, $frequency) . '</div>'
+           . '</a>';
+       }
+   } else {
+       // 新しい0データ案内メッセージ（統一デザイン・ガイダンス）
+       $results[] = '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%); border-radius: 8px; margin: 18px 0; color: #333; font-weight: 600; box-shadow: 0 3px 12px rgba(0,0,0,0.07); display: flex; align-items: center; font-size: 15px; gap: 10px;">'
+           . '<span class="material-symbols-outlined" aria-label="データ作成">add_circle</span>'
+           . '<span style="font-size: 1em; font-weight: 600;">[＋]ボタンを押してデーターを作成してください</span>'
+           . '<span style="margin-left: 18px; font-size: 13px; color: #888;">データがまだ登録されていません</span>'
+           . '</div>';
+   }
        }
 
        $results_f = "<div class=\"pagination\">";
@@ -698,8 +697,12 @@ class Kntan_Client_Class {
                     $order_user_name = '';
                     // $post_row を空配列にして以降のフォーム生成処理を通す
                     $post_row = [];
-                    // リスト部分にだけ「データがありません」メッセージを出す
-                    $results[] = '<div class="ktp_data_list_item">' . esc_html__('データーがありません。', 'ktpwp') . '</div>';
+                    // リスト部分にだけ「0データ」ガイダンスを出す（統一デザイン）
+                    $results[] = '<div class="ktp_data_list_item" style="padding: 15px 20px; background: linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%); border-radius: 8px; margin: 18px 0; color: #333; font-weight: 600; box-shadow: 0 3px 12px rgba(0,0,0,0.07); display: flex; align-items: center; font-size: 15px; gap: 10px;">'
+                        . '<span class="material-symbols-outlined" aria-label="データ作成">add_circle</span>'
+                        . '<span style="font-size: 1em; font-weight: 600;">[＋]ボタンを押してデーターを作成してください</span>'
+                        . '<span style="margin-left: 18px; font-size: 13px; color: #888;">データがまだ登録されていません</span>'
+                        . '</div>';
                 }
             }
             // 表示したIDをクッキーに保存
