@@ -84,19 +84,11 @@ class KTPWP_Client_DB {
             }
             foreach ($def_column_names as $i => $col_name) {
                 if (!in_array($col_name, $existing_columns)) {
-                    if ($col_name === 'UNIQUE') continue;
-                    if ($col_name === 'category' && version_compare(get_option('ktp_' . $tab_name . '_table_version', '1.0.0'), '1.0.2', '<')) {
-                        $def = $columns_def[$i];
-                        $result = $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN {$def}");
-                        if ($result === false) {
-                            error_log("KTPWP: Failed to add column {$col_name} to table {$table_name}");
-                        }
-                    } elseif ($col_name !== 'category') {
-                        $def = $columns_def[$i];
-                        $result = $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN {$def}");
-                        if ($result === false) {
-                            error_log("KTPWP: Failed to add column {$col_name} to table {$table_name}");
-                        }
+                    if ($col_name === 'UNIQUE' || $col_name === 'category') continue;
+                    $def = $columns_def[$i];
+                    $result = $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN {$def}");
+                    if ($result === false) {
+                        error_log("KTPWP: Failed to add column {$col_name} to table {$table_name}");
                     }
                 }
             }
@@ -464,6 +456,24 @@ class KTPWP_Client_DB {
         ));
 
         return $prev_id ? $prev_id : 1;
+    }
+
+    public function get_client_by_id($client_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ktp_clients';
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $client_id));
+    }
+
+    public function get_all_clients() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ktp_clients';
+        return $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name ORDER BY client_name ASC", array()));
+    }
+
+    public function get_total_clients() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ktp_clients';
+        return $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name", array()));
     }
 }
 }

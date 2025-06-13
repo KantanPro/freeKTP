@@ -313,8 +313,10 @@ class Kntan_Client_Class {
                $client_id = filter_input(INPUT_COOKIE, $cookie_name, FILTER_SANITIZE_NUMBER_INT);
            } else {
                // 最後のIDを取得して表示
-               $query = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
-               $last_id_row = $wpdb->get_row($query);
+               // $query = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
+               // $last_id_row = $wpdb->get_row($query);
+               $query_last_id = $wpdb->prepare("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1", array());
+               $last_id_row = $wpdb->get_row($query_last_id);
                $client_id = $last_id_row ? $last_id_row->id : 1;
            }
 
@@ -331,9 +333,15 @@ class Kntan_Client_Class {
                $client_ids_str = '0'; // 安全なフォールバック値
            }
 
-           // IDが複数ある場合、IN句を使用
-           $total_query = "SELECT COUNT(*) FROM {$order_table} WHERE client_id IN ({$client_ids_str})";
-           $total_rows = $wpdb->get_var($total_query);
+           // IDが複数ある場合、IN句を使用 (元のコメントだが、現状は単一ID)
+           // $total_query = "SELECT COUNT(*) FROM {$order_table} WHERE client_id IN ({$client_ids_str})";
+           // $total_rows = $wpdb->get_var($total_query);
+           // $client_id 変数を直接使用する方が明確
+           $total_query_prepared = $wpdb->prepare(
+               "SELECT COUNT(*) FROM {$order_table} WHERE client_id = %d",
+               intval($client_id)
+           );
+           $total_rows = $wpdb->get_var($total_query_prepared);
            $total_pages = ceil($total_rows / $query_limit);
 
            // 現在のページ番号を計算
@@ -353,9 +361,15 @@ class Kntan_Client_Class {
            $order_sort_column = esc_sql($order_sort_by); // SQLインジェクション対策
            $order_sort_direction = $order_sort_order === 'ASC' ? 'ASC' : 'DESC'; // SQLインジェクション対策
 
+           // 修正: $order_sort_column 内の % を %% にエスケープして prepare に渡す
+           $order_sort_column_prepared = str_replace('%', '%%', $order_sort_column);
+
+           // 修正: $client_ids_str をプレースホルダーに置き換え
+           $client_ids_array = explode(',', $client_ids_str);
+           $placeholders = implode(',', array_fill(0, count($client_ids_array), '%d'));
            $query = $wpdb->prepare(
-               "SELECT * FROM {$order_table} WHERE client_id IN ({$client_ids_str}) ORDER BY {$order_sort_column} {$order_sort_direction} LIMIT %d, %d",
-               intval($page_start), intval($query_limit)
+               "SELECT * FROM {$order_table} WHERE client_id IN ($placeholders) ORDER BY {$order_sort_column_prepared} {$order_sort_direction} LIMIT %d, %d", // $order_sort_column_prepared を使用
+               array_merge($client_ids_array, [intval($page_start), intval($query_limit)])
            );
 
            $order_rows = $wpdb->get_results($query);
@@ -435,8 +449,10 @@ class Kntan_Client_Class {
        } else {
            // 通常の顧客一覧表示（既存のコード）
            // 全データ数を取得
-           $total_query = "SELECT COUNT(*) FROM {$table_name}";
-           $total_rows = $wpdb->get_var($total_query);
+           // $total_query = "SELECT COUNT(*) FROM {$table_name}";
+           // $total_rows = $wpdb->get_var($total_query);
+           $total_query_prepared = "SELECT COUNT(*) FROM {$table_name}";
+           $total_rows = $wpdb->get_var($total_query_prepared);
            $total_pages = ceil($total_rows / $query_limit);
 
            // 現在のページ番号を計算
@@ -444,8 +460,9 @@ class Kntan_Client_Class {
 
            // データを取得（選択されたソート順で）
            $sort_column = esc_sql($sort_by); // SQLインジェクション対策
+           $sort_column_prepared = str_replace('%', '%%', $sort_column); // % を %% にエスケープ
            $sort_direction = $sort_order === 'ASC' ? 'ASC' : 'DESC'; // SQLインジェクション対策
-           $query = $wpdb->prepare("SELECT * FROM {$table_name} ORDER BY {$sort_column} {$sort_direction} LIMIT %d, %d", intval($page_start), intval($query_limit));
+           $query = $wpdb->prepare("SELECT * FROM {$table_name} ORDER BY {$sort_column_prepared} {$sort_direction} LIMIT %d, %d", intval($page_start), intval($query_limit));
            $post_row = $wpdb->get_results($query);
 
            $results = array(); // 結果を格納する配列を初期化
@@ -628,12 +645,16 @@ class Kntan_Client_Class {
                     $query_id = $cookie_id;
                 } else {
                     // 存在しなければ最大ID
-                    $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
+                    // $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
+                    $query_max_id_cookie_fallback = $wpdb->prepare("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1", array());
+                    $max_id_row = $wpdb->get_row($query_max_id_cookie_fallback);
                     $query_id = $max_id_row ? $max_id_row->id : '';
                 }
             } else {
                 // data_id未指定時は必ずID最大の得意先を表示
-                $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
+                // $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
+                $query_max_id_no_get_cookie = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
+                $max_id_row = $wpdb->get_row($query_max_id_no_get_cookie);
                 $query_id = $max_id_row ? $max_id_row->id : '';
             }
 
@@ -642,7 +663,9 @@ class Kntan_Client_Class {
             $post_row = $wpdb->get_results($query);
             if (!$post_row || count($post_row) === 0) {
                 // 存在しないIDの場合は最大IDを取得して再表示
-                $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
+                // $max_id_row = $wpdb->get_row("SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1");
+                $query_max_id_fetch_fail_fallback = "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1";
+                $max_id_row = $wpdb->get_row($query_max_id_fetch_fail_fallback);
                 if ($max_id_row && isset($max_id_row->id)) {
                     $query_id = $max_id_row->id;
                     $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $query_id);
@@ -844,7 +867,7 @@ class Kntan_Client_Class {
             // 最後のIDを取得
             // $wpdb と $table_name がこのスコープで利用可能である必要がある
             if ( isset( $wpdb, $table_name ) ) {
-                $query = $wpdb->prepare( "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1" );
+                $query = $wpdb->prepare( "SELECT id FROM {$table_name} ORDER BY id DESC LIMIT 1", array() );
                 $last_id_row = $wpdb->get_row($query);
                 $current_client_id = $last_id_row ? $last_id_row->id : 0;
             }
@@ -1256,7 +1279,7 @@ class Kntan_Client_Class {
         $prefecture = $data_src['prefecture'];
         $city = $data_src['city'];
         $address = $data_src['address'];
-        $building = $data_src['building'];
+               $building = $data_src['building'];
 
         $data = [
             'postal_code' => "$postal_code",
