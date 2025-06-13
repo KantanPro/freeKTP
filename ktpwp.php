@@ -124,6 +124,17 @@ add_action('init', function() {
             error_log( 'KTPWP Plugin: KTPWP_Main class not found' );
         }
     }
+    // Contact Form 7連携クラスも必ず初期化
+    if ( class_exists( 'KTPWP_Contact_Form' ) ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'KTPWP Plugin: KTPWP_Contact_Form class found, initializing...' );
+        }
+        KTPWP_Contact_Form::get_instance();
+    } else {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'KTPWP Plugin: KTPWP_Contact_Form class not found' );
+        }
+    }
 });
 
 // プラグインリファレンス機能の初期化はinit以降に遅延（翻訳エラー防止）

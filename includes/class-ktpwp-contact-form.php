@@ -95,19 +95,13 @@ class KTPWP_Contact_Form {
      * フック初期化
      */
     private function init_hooks() {
+        error_log('KTPWP DEBUG: init_hooks called');
         // Contact Form 7が有効な場合のみフックを追加
         if (class_exists('WPCF7_ContactForm')) {
-            // 必要なフックのみ登録（重複登録防止）
             add_action('wpcf7_mail_sent', array($this, 'capture_contact_form_data'));
-            // デバッグログ: フック登録成功
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('KTPWP CF7: Only wpcf7_mail_sent hook registered');
-            }
+            error_log('KTPWP DEBUG: wpcf7_mail_sent hook registered');
         } else {
-            // デバッグログ: Contact Form 7が見つからない
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('KTPWP CF7: WPCF7_ContactForm class not found');
-            }
+            error_log('KTPWP DEBUG: WPCF7_ContactForm class not found');
         }
     }
     
@@ -141,6 +135,7 @@ class KTPWP_Contact_Form {
      * @param WPCF7_ContactForm $contact_form Contact Form 7のフォームオブジェクト
      */
     public function capture_contact_form_data($contact_form) {
+        error_log('KTPWP DEBUG: capture_contact_form_data called');
         // デバッグログ: メソッド呼び出し確認
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('KTPWP CF7: capture_contact_form_data method called');
