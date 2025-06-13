@@ -323,6 +323,7 @@ class KTP_Settings {
             time BIGINT(11) DEFAULT 0 NOT NULL,
             client_id MEDIUMINT(9) DEFAULT NULL,
             customer_name VARCHAR(100) NOT NULL,
+            company_name VARCHAR(255) DEFAULT NULL,
             user_name TINYTEXT,
             project_name VARCHAR(255),
             progress TINYINT(1) NOT NULL DEFAULT 1,
@@ -336,6 +337,14 @@ class KTP_Settings {
             KEY client_id (client_id) 
         ) $charset_collate;";
         dbDelta( $sql_order );
+
+        // 既存テーブルにカラムを追加
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name_order'") == $table_name_order) {
+            $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name_order LIKE 'company_name'");
+            if (empty($column_exists)) {
+                $wpdb->query("ALTER TABLE $table_name_order ADD company_name VARCHAR(255) DEFAULT NULL;");
+            }
+        }
 
         // 他のテーブルも同様に追加・更新
 
