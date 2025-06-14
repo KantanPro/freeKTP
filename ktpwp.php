@@ -757,8 +757,8 @@ add_action('admin_menu', function() {
 });
 
 // GitHub Updater
-// add_filter('pre_set_site_transient_update_plugins', 'kpwp_github_plugin_update');
-// add_filter('plugins_api', 'kpwp_github_plugin_update_info', 10, 3);
+add_filter('pre_set_site_transient_update_plugins', 'kpwp_github_plugin_update');
+add_filter('plugins_api', 'kpwp_github_plugin_update_info', 10, 3);
 
 function kpwp_github_plugin_update($transient) {
     if (empty($transient->checked)) {
