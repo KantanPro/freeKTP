@@ -178,43 +178,56 @@ class KTPWP_Main {
         // KTPWP_Ajax は常に初期化する
         if (class_exists('KTPWP_Ajax')) {
             $this->ajax = KTPWP_Ajax::get_instance();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP_Main: KTPWP_Ajax initialized.');
+            }
         }
 
-        // 編集者権限がない場合は、他の主要コンポーネントを初期化しない
-        if ( ! current_user_can( 'edit_posts' ) ) {
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log('KTPWP_Main: User cannot edit_posts. Some components might not be initialized.');
-            }
-            // Contact Form 7 連携は権限に関係なく初期化する（フロントエンドで必要）
-            if ( class_exists( 'KTPWP_Contact_Form' ) ) {
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'KTPWP_Main: KTPWP_Contact_Form class found, initializing...' );
-                }
-                $this->contact_form = KTPWP_Contact_Form::get_instance();
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'KTPWP_Main: KTPWP_Contact_Form initialized successfully (frontend)' );
-                }
+        // KTPWP_Assets も常に初期化し、フックを登録する
+        // アセットを実際にエンキューするかの判断は KTPWP_Assets クラス内で行う
+        if (class_exists('KTPWP_Assets')) {
+            if (method_exists('KTPWP_Assets', 'get_instance')) {
+                $this->assets = KTPWP_Assets::get_instance(); // シングルトンの場合
             } else {
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'KTPWP_Main: KTPWP_Contact_Form class not found' );
-                }
+                $this->assets = new KTPWP_Assets(); // 通常のインスタンス化
             }
-            
-            return;
-        }
-
-        // アセット管理（シングルトンパターンでない場合は通常のインスタンス化）
-        if ( class_exists( 'KTPWP_Assets' ) ) {
-            if ( method_exists( 'KTPWP_Assets', 'get_instance' ) ) {
-                $this->assets = KTPWP_Assets::get_instance();
-            } else {
-                $this->assets = new KTPWP_Assets();
+            // KTPWP_Assets の init メソッドを呼び出してフックを登録
+            if (isset($this->assets) && method_exists($this->assets, 'init')) {
                 $this->assets->init();
             }
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'KTPWP_Main: KTPWP_Assets initialized successfully' );
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP_Main: KTPWP_Assets instance created and its init() method called.');
             }
         }
+
+        // 編集者権限に依存するコンポーネントの初期化
+        if (!current_user_can('edit_posts')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP_Main: User does not have edit_posts capability. Initializing only non-editor components.');
+            }
+            // Contact Form 7 連携は権限に関係なく初期化する（フロントエンドで必要 な場合があるため）
+            if (class_exists('KTPWP_Contact_Form')) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP_Main: KTPWP_Contact_Form class found, initializing for non-editor...');
+                }
+                $this->contact_form = KTPWP_Contact_Form::get_instance();
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP_Main: KTPWP_Contact_Form initialized for non-editor.');
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP_Main: KTPWP_Contact_Form class not found (non-editor path).');
+                }
+            }
+            return; // edit_posts 権限がない場合は、ここで処理を終了
+        }
+
+        // --- edit_posts 権限があるユーザー向けの初期化 ---
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP_Main: User has edit_posts capability. Initializing editor-specific components.');
+        }
+
+        // アセット管理は既に上で初期化済み
 
         // 他のクラスは後で段階的に追加
         /*
@@ -226,11 +239,12 @@ class KTPWP_Main {
         $this->database = KTPWP_Database::get_instance();
         */
 
-        // Contact Form 7連携の初期化
-        if ( class_exists( 'KTPWP_Contact_Form' ) ) {
+        // Contact Form 7連携の初期化 (edit_posts 権限があるユーザー向け)
+        // 上の non-editor パスで return されるため、ここは edit_posts 権限がある場合のみ実行される
+        if (class_exists('KTPWP_Contact_Form')) {
             $this->contact_form = KTPWP_Contact_Form::get_instance();
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'KTPWP_Main: KTPWP_Contact_Form initialized successfully' );
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP_Main: KTPWP_Contact_Form initialized for editor.');
             }
         }
     }
