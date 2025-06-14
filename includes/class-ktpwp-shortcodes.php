@@ -99,12 +99,13 @@ class KTPWP_Shortcodes {
         }
 
         // ログイン状態と権限チェック
-        if (!is_user_logged_in()) { // まずログインしているかチェック
+        if (!is_user_logged_in()) { // ログインしているかチェック
             return $this->render_login_error();
         }
-        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) { // 次に権限をチェック
-            return $this->render_permission_error(); // 権限がない場合は専用のエラーメッセージ
-        }
+        // 権限チェックを削除し、ログインしていれば誰でも表示するように変更
+        // if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) { // 次に権限をチェック
+        //     return $this->render_permission_error(); // 権限がない場合は専用のエラーメッセージ
+        // }
 
         // 属性のデフォルト値設定
         $atts = shortcode_atts(array(
@@ -183,14 +184,22 @@ class KTPWP_Shortcodes {
     private function get_logged_in_users_display() {
         global $current_user;
 
-        // 厳密なログイン状態確認
-        if (!is_user_logged_in() || (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) || !$current_user || $current_user->ID <= 0) {
+        // 厳密なログイン状態確認 (権限チェック部分を削除)
+        if (!is_user_logged_in() || !$current_user || $current_user->ID <= 0) {
             return '';
         }
 
         // セッション有効性確認
         $user_sessions = WP_Session_Tokens::get_instance($current_user->ID);
         if (!$user_sessions || empty($user_sessions->get_all())) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP Debug: get_logged_in_users_display - Session check failed. $current_user->ID: ' . (isset($current_user->ID) ? $current_user->ID : 'undefined'));
+                if (isset($current_user->ID)) {
+                    if (!$user_sessions) { // Check $user_sessions which would be falsy here
+                        error_log('KTPWP Debug: get_logged_in_users_display - WP_Session_Tokens::get_instance returned falsy for $current_user->ID: ' . $current_user->ID);
+                    }
+                }
+            }
             return '';
         }
 
@@ -208,13 +217,22 @@ class KTPWP_Shortcodes {
     private function get_navigation_links() {
         global $current_user;
 
-        // ログイン状態とセッション確認
-        if (!is_user_logged_in() || (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) || !$current_user || $current_user->ID <= 0) {
+        // ログイン状態とセッション確認 (権限チェック部分を削除)
+        if (!is_user_logged_in() || !$current_user || $current_user->ID <= 0) {
             return '';
         }
 
+        // セッション有効性確認
         $user_sessions = WP_Session_Tokens::get_instance($current_user->ID);
         if (!$user_sessions || empty($user_sessions->get_all())) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('KTPWP Debug: get_navigation_links - Session check failed. $current_user->ID: ' . (isset($current_user->ID) ? $current_user->ID : 'undefined'));
+                if (isset($current_user->ID)) {
+                     if (!$user_sessions) { // Check $user_sessions which would be falsy here
+                        error_log('KTPWP Debug: get_navigation_links - WP_Session_Tokens::get_instance returned falsy for $current_user->ID: ' . $current_user->ID);
+                    }
+                }
+            }
             return '';
         }
 
