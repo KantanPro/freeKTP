@@ -605,8 +605,8 @@ function KTPWP_Index(){
     //すべてのタブのショートコード[kantanAllTab]
     function kantanAllTab(){
 
-        //ログイン中で編集者権限またはKTPWP利用権限がある場合のみ
-        if (is_user_logged_in() && (current_user_can('edit_posts') || current_user_can('ktpwp_access'))) {
+        // ログイン中のユーザーは全員ヘッダーを表示（権限による制限を緩和）
+        if (is_user_logged_in()) {
             // XSS対策: 画面に出力する変数は必ずエスケープ
 
             // ユーザーのログインログアウト状況を取得するためのAjaxを登録
@@ -644,7 +644,7 @@ function KTPWP_Index(){
             $logged_in_users_html = '';
 
             // より厳密なログイン状態の確認
-            if ( is_user_logged_in() && $current_user && $current_user->ID > 0 ) { // 'edit_posts' 権限チェックを削除
+            if ( is_user_logged_in() && $current_user && $current_user->ID > 0 ) {
                 // セッションの有効性も確認
                 $user_sessions = WP_Session_Tokens::get_instance( $current_user->ID );
                 if ( $user_sessions && ! empty( $user_sessions->get_all() ) ) {
@@ -667,22 +667,19 @@ function KTPWP_Index(){
 
             // ログインしているユーザーのみにナビゲーションリンクを表示
             $navigation_links = '';
-            if ( is_user_logged_in() && $current_user && $current_user->ID > 0 ) { // 'edit_posts' 権限チェックを削除
+            if ( is_user_logged_in() && $current_user && $current_user->ID > 0 ) {
                 // セッションの有効性も確認
                 $user_sessions = WP_Session_Tokens::get_instance( $current_user->ID );
                 if ( $user_sessions && ! empty( $user_sessions->get_all() ) ) {
-                    $navigation_links .= '　<a href="' . $logout_link . '">ログアウト</a>'; // ログアウトリンクは常に表示
-
-                    if (current_user_can('edit_posts')) { // 更新リンクは編集者権限がある場合のみ
+                    $navigation_links .= '　<a href="' . $logout_link . '">ログアウト</a>';
+                    // 更新リンクは編集者権限がある場合のみ
+                    if (current_user_can('edit_posts')) {
                         $navigation_links .= '　<a href="' . $update_link_url . '">更新</a>';
                         $navigation_links .= '　' . $act_key;
                     }
-
-                    // リファレンスボタンは ktpwp_access 権限または編集者権限で表示 (またはログインユーザー全員に表示も検討可)
-                    if (current_user_can('ktpwp_access') || current_user_can('edit_posts')) {
-                        $reference_instance = KTPWP_Plugin_Reference::get_instance();
-                        $navigation_links .= $reference_instance->get_reference_link();
-                    }
+                    // リファレンスボタンはログインユーザー全員に表示
+                    $reference_instance = KTPWP_Plugin_Reference::get_instance();
+                    $navigation_links .= $reference_instance->get_reference_link();
                 }
             }
 

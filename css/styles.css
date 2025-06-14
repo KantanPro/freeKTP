@@ -1,3 +1,9 @@
+/* 1行目の「+」ボタンが必ず表示されるように強制 */
+.btn-add-row {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
 /* コスト項目トグルボタン */
 .toggle-cost-items {
     background: #007cba;
