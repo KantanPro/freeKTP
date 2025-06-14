@@ -23,27 +23,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // プラグイン定数定義
-if ( ! defined( 'KTPWP_PLUGIN_VERSION' ) ) {
-    define( 'KTPWP_PLUGIN_VERSION', '1.0.2(beta)' );
+if ( ! defined( 'KANTANPRO_PLUGIN_VERSION' ) ) {
+    define( 'KANTANPRO_PLUGIN_VERSION', '1.0.2(beta)' );
 }
-if ( ! defined( 'KTPWP_PLUGIN_NAME' ) ) {
-    define( 'KTPWP_PLUGIN_NAME', 'KantanPro' );
+if ( ! defined( 'KANTANPRO_PLUGIN_NAME' ) ) {
+    define( 'KANTANPRO_PLUGIN_NAME', 'KantanPro' );
 }
-if ( ! defined( 'KTPWP_PLUGIN_DESCRIPTION' ) ) {
+if ( ! defined( 'KANTANPRO_PLUGIN_DESCRIPTION' ) ) {
     // 翻訳読み込み警告を回避するため、initアクションで設定
-    define( 'KTPWP_PLUGIN_DESCRIPTION', '包括的なビジネス管理プラグイン。ショートコード[ktpwp_all_tab]で7つのタブ（仕事リスト・伝票処理・得意先・サービス・協力会社・レポート・設定）による完全なワークフロー管理を実現。' );
+    define( 'KANTANPRO_PLUGIN_DESCRIPTION', '包括的なビジネス管理プラグイン。ショートコード[ktpwp_all_tab]で7つのタブ（仕事リスト・伝票処理・得意先・サービス・協力会社・レポート・設定）による完全なワークフロー管理を実現。' );
 }
-if ( ! defined( 'KTPWP_PLUGIN_FILE' ) ) {
-    define( 'KTPWP_PLUGIN_FILE', __FILE__ );
+if ( ! defined( 'KANTANPRO_PLUGIN_FILE' ) ) {
+    define( 'KANTANPRO_PLUGIN_FILE', __FILE__ );
 }
-if ( ! defined( 'KTPWP_PLUGIN_DIR' ) ) {
-    define( 'KTPWP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+if ( ! defined( 'KANTANPRO_PLUGIN_DIR' ) ) {
+    define( 'KANTANPRO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 }
-if ( ! defined( 'KTPWP_PLUGIN_URL' ) ) {
-    define( 'KTPWP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+if ( ! defined( 'KANTANPRO_PLUGIN_URL' ) ) {
+    define( 'KANTANPRO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 if ( ! defined( 'MY_PLUGIN_VERSION' ) ) {
-    define( 'MY_PLUGIN_VERSION', KTPWP_PLUGIN_VERSION );
+    define( 'MY_PLUGIN_VERSION', KANTANPRO_PLUGIN_VERSION );
 }
 if ( ! defined( 'MY_PLUGIN_PATH' ) ) {
     define( 'MY_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -766,7 +766,7 @@ function kpwp_github_plugin_update($transient) {
     }
 
     // プラグイン情報
-    $plugin_slug = 'KTPWP/ktpwp.php';
+    $plugin_slug = 'KantanPro/ktpwp.php';
     $github_user = 'KantanPro'; // 正しいGitHubユーザー名
     $github_repo = 'freeKTP'; // 正しいリポジトリ名（大文字小文字に注意）
 
@@ -827,7 +827,7 @@ function kpwp_github_plugin_update($transient) {
 
 // プラグイン情報を取得する関数
 function kpwp_github_plugin_update_info($res, $action, $args) {
-    if ($action !== 'plugin_information' || !isset($args->slug) || $args->slug !== 'KTPWP') {
+    if ($action !== 'plugin_information' || !isset($args->slug) || $args->slug !== 'KantanPro') {
         return $res;
     }
 
@@ -850,11 +850,11 @@ function kpwp_github_plugin_update_info($res, $action, $args) {
         return $res;
     }
 
-    $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/KTPWP/ktpwp.php');
+    $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/KantanPro/ktpwp.php');
 
     $res = new stdClass();
     $res->name = $plugin_data['Name'];
-    $res->slug = 'KTPWP';
+    $res->slug = 'KantanPro';
     $res->version = ltrim($release->tag_name, 'v');
     $res->tested = get_bloginfo('version');
     $res->requires = '5.0'; // 必要なWordPressのバージョン
