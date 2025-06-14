@@ -33,6 +33,17 @@ if ( ! defined( 'KANTANPRO_PLUGIN_DESCRIPTION' ) ) {
     // 翻訳読み込み警告を回避するため、initアクションで設定
     define( 'KANTANPRO_PLUGIN_DESCRIPTION', '包括的なビジネス管理プラグイン。ショートコード[ktpwp_all_tab]で7つのタブ（仕事リスト・伝票処理・得意先・サービス・協力会社・レポート・設定）による完全なワークフロー管理を実現。' );
 }
+
+// Define KTPWP_PLUGIN_VERSION if not already defined, possibly aliasing KANTANPRO_PLUGIN_VERSION
+if ( ! defined( 'KTPWP_PLUGIN_VERSION' ) ) {
+    if ( defined( 'KANTANPRO_PLUGIN_VERSION' ) ) {
+        define( 'KTPWP_PLUGIN_VERSION', KANTANPRO_PLUGIN_VERSION );
+    } else {
+        // Fallback if KANTANPRO_PLUGIN_VERSION is also not defined for some reason
+        define( 'KTPWP_PLUGIN_VERSION', '1.0.0' ); // You might want to set a default or handle this case differently
+    }
+}
+
 if ( ! defined( 'KANTANPRO_PLUGIN_FILE' ) ) {
     define( 'KANTANPRO_PLUGIN_FILE', __FILE__ );
 }
