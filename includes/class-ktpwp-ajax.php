@@ -1094,7 +1094,6 @@ class KTPWP_Ajax {
         remove_all_actions('wp_print_footer_scripts');
 
         // WordPress コアの重要な処理を破壊しないよう、shutdown フックは保持
-        // remove_all_actions('shutdown'); // コメントアウト：WordPress コア機能に必要
 
         // 他のプラグインのAJAX干渉を防ぐ（安全な範囲で）
         if (class_exists('WP_Debug_Bar')) {

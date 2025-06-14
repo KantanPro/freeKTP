@@ -916,21 +916,15 @@ add_action('wp_ajax_ktp_update_project_name', function() {
     }
 });
 
-// 非ログイン時もAjaxを許可（必要なら）
 // 非ログイン時はAjaxで案件名編集不可（セキュリティのため）
 add_action('wp_ajax_nopriv_ktp_update_project_name', function() {
     wp_send_json_error(__('ログインが必要です', 'ktpwp'));
 });
 
-// ajaxurlをフロントにも出力 //この処理は wp_localize_script に置き換えたためコメントアウト
-/* add_action('wp_head', function() {
-    if (!is_admin()) {
-        echo '<script>var ajaxurl = "' . admin_url('admin-ajax.php') . '";</script>';
-    }
-}); */
 
 
-// 必要なら includes/class-tab-list.php, class-view-tab.php を明示的に読み込む（自動読み込みされていない場合のみ）
+
+// includes/class-tab-list.php, class-view-tab.php を明示的に読み込む（自動読み込みされていない場合のみ）
 if (!class_exists('Kantan_List_Class')) {
     include_once(MY_PLUGIN_PATH . 'includes/class-tab-list.php');
 }
