@@ -263,6 +263,7 @@ class KTPWP_Staff_Chat {
 
         // Check user permissions
         $current_user_id = get_current_user_id();
+        error_log('KTPWP StaffChat: add_message debug - current_user_id: ' . print_r($current_user_id, true) . ' order_id: ' . print_r($order_id, true));
         if ( ! $current_user_id ) {
             error_log( 'KTPWP StaffChat: add_message failed - no current user for order_id: ' . print_r($order_id, true) );
             return false;
@@ -412,7 +413,6 @@ class KTPWP_Staff_Chat {
             $html .= '<div class="staff-chat-empty">' . esc_html__( 'メッセージはありません。', 'ktpwp' ) . '</div>';
         } else {
             // Separate fixed header from scrollable messages
-
             foreach ( $messages as $index => $message ) {
                 if ( $index === 0 && intval( $message['is_initial'] ) === 1 ) {
                     // First message: fixed header display
@@ -425,6 +425,7 @@ class KTPWP_Staff_Chat {
                     // Get WordPress avatar
                     $user_id = intval( $message['user_id'] );
                     $avatar = get_avatar( $user_id, 32, '', $user_display_name, array( 'class' => 'staff-chat-wp-avatar' ) );
+                    error_log('KTPWP StaffChat: generate_html avatar debug - user_id: ' . print_r($user_id, true) . ' avatar_html: ' . print_r($avatar, true));
 
                     $header_html .= '<div class="staff-chat-header-fixed">';
                     $header_html .= '<div class="staff-chat-message initial first-line">';

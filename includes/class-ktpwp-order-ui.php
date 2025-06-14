@@ -112,14 +112,12 @@ class KTPWP_Order_UI {
         foreach ( $items as $index => $item ) {
             $row_id = isset( $item['id'] ) ? intval( $item['id'] ) : 0;
             $html .= '<tr class="invoice-item-row" data-row-id="' . $row_id . '">';
-            
             // Actions column with drag handle and buttons
             $html .= '<td class="actions-column">';
             $html .= '<span class="drag-handle" title="' . esc_attr__( 'ドラッグして並び替え', 'ktpwp' ) . '">&#9776;</span>';
             $html .= '<button type="button" class="btn-add-row" title="' . esc_attr__( '行を追加', 'ktpwp' ) . '">+</button>';
-            if ( count( $items ) > 1 || $row_id > 0 ) {
-                $html .= '<button type="button" class="btn-delete-row" title="' . esc_attr__( '行を削除', 'ktpwp' ) . '">×</button>';
-            }
+            // --- ここを修正: 1行目でも常に削除ボタンを出力 ---
+            $html .= '<button type="button" class="btn-delete-row" title="' . esc_attr__( '行を削除', 'ktpwp' ) . '">×</button>';
             $html .= '<button type="button" class="btn-move-row" title="' . esc_attr__( '行を移動', 'ktpwp' ) . '">></button>';
             $html .= '</td>';
 
@@ -240,14 +238,12 @@ class KTPWP_Order_UI {
         foreach ( $items as $index => $item ) {
             $row_id = isset( $item['id'] ) ? intval( $item['id'] ) : 0;
             $html .= '<tr class="cost-item-row" data-row-id="' . $row_id . '">';
-            
             // Actions column with drag handle and buttons
             $html .= '<td class="actions-column">';
             $html .= '<span class="drag-handle" title="' . esc_attr__( 'ドラッグして並び替え', 'ktpwp' ) . '">&#9776;</span>';
             $html .= '<button type="button" class="btn-add-row" title="' . esc_attr__( '行を追加', 'ktpwp' ) . '">+</button>';
-            if ( count( $items ) > 1 || $row_id > 0 ) {
-                $html .= '<button type="button" class="btn-delete-row" title="' . esc_attr__( '行を削除', 'ktpwp' ) . '">×</button>';
-            }
+            // --- ここを修正: 1行目でも常に削除ボタンを出力 ---
+            $html .= '<button type="button" class="btn-delete-row" title="' . esc_attr__( '行を削除', 'ktpwp' ) . '">×</button>';
             $html .= '<button type="button" class="btn-move-row" title="' . esc_attr__( '行を移動', 'ktpwp' ) . '">></button>';
             $html .= '</td>';
 

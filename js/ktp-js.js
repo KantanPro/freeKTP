@@ -1,4 +1,51 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // =============================
+    // 行追加・削除ボタンのイベント委譲（常に動作するように）
+    // =============================
+    // 請求書テーブル
+    document.body.addEventListener('click', function(e) {
+        // 行追加
+        if (e.target && e.target.classList.contains('btn-add-row')) {
+            var tr = e.target.closest('tr');
+            if (!tr) return;
+            var table = tr.closest('table');
+            if (!table) return;
+            var tbody = table.querySelector('tbody');
+            if (!tbody) return;
+            // 新しい行を複製して追加（最終行の内容をコピーして空欄化）
+            var newRow = tr.cloneNode(true);
+            // 各inputの値をリセット
+            newRow.querySelectorAll('input').forEach(function(input) {
+                if (input.type === 'number') input.value = 0;
+                else input.value = '';
+            });
+            tbody.insertBefore(newRow, tr.nextSibling);
+            // フォーカスを新しい行の最初のinputへ
+            var firstInput = newRow.querySelector('input');
+            if (firstInput) firstInput.focus();
+            e.preventDefault();
+        }
+        // 行削除
+        if (e.target && e.target.classList.contains('btn-delete-row')) {
+            var tr = e.target.closest('tr');
+            if (!tr) return;
+            var table = tr.closest('table');
+            if (!table) return;
+            var tbody = table.querySelector('tbody');
+            if (!tbody) return;
+            // 最低1行は残す
+            if (tbody.querySelectorAll('tr').length > 1) {
+                tr.remove();
+            } else {
+                // 1行しかない場合は値だけリセット
+                tr.querySelectorAll('input').forEach(function(input) {
+                    if (input.type === 'number') input.value = 0;
+                    else input.value = '';
+                });
+            }
+            e.preventDefault();
+        }
+    });
     console.log('KTPWP: DOM loaded, initializing toggle functionality');
 
     // HTMLエスケープ関数
@@ -310,47 +357,27 @@ document.addEventListener('DOMContentLoaded', function () {
                                 var response = JSON.parse(xhr.responseText);
                                 if (response.success) {
                                     // メッセージをクリア
-                                    var messageText = messageInput.value.trim();
                                     messageInput.value = '';
                                     updateSubmitButton();
-                                    
-                                    // 新しいメッセージを動的に追加
-                                    var messagesContainer = document.getElementById('staff-chat-messages');
-                                    if (messagesContainer) {
-                                        var currentUser = (typeof ktpwp_ajax !== 'undefined' && ktpwp_ajax.current_user) ? 
-                                            ktpwp_ajax.current_user : 'スタッフ';
-                                        var currentTime = new Date().toLocaleString('ja-JP', {
-                                            year: 'numeric',
-                                            month: 'numeric', 
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
+
+                                    // 最新のチャットHTMLを取得し、アバター付きで上書き
+                                    fetch(window.location.href, { credentials: 'same-origin' })
+                                        .then(function(res) { return res.text(); })
+                                        .then(function(html) {
+                                            var tempDiv = document.createElement('div');
+                                            tempDiv.innerHTML = html;
+                                            var newMessages = tempDiv.querySelector('#staff-chat-messages');
+                                            var messagesContainer = document.getElementById('staff-chat-messages');
+                                            if (newMessages && messagesContainer) {
+                                                messagesContainer.innerHTML = newMessages.innerHTML;
+                                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                                updateStaffChatButtonText();
+                                            } else {
+                                                // fallback: reload
+                                                localStorage.setItem('ktp_scroll_to_chat', 'true');
+                                                window.location.reload();
+                                            }
                                         });
-                                        
-                                        var messageDiv = document.createElement('div');
-                                        messageDiv.className = 'staff-chat-message scrollable';
-                                        messageDiv.innerHTML = 
-                                            '<div class="staff-chat-message-header">' +
-                                                '<span class="staff-chat-user-name">' + escapeHtml(currentUser) + '</span>' +
-                                                '<span class="staff-chat-timestamp">' + escapeHtml(currentTime) + '</span>' +
-                                            '</div>' +
-                                            '<div class="staff-chat-message-content">' + escapeHtml(messageText).replace(/\n/g, '<br>') + '</div>';
-                                        
-                                        messagesContainer.appendChild(messageDiv);
-                                        
-                                        // 最下部にスクロール
-                                        setTimeout(function() {
-                                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                                        }, 100);
-                                        
-                                        // ボタンテキストを更新
-                                        updateStaffChatButtonText();
-                                    } else {
-                                        // フォールバック：ページリロード
-                                        localStorage.setItem('ktp_scroll_to_chat', 'true');
-                                        window.location.reload();
-                                    }
-                                    
                                     return;
                                 } else {
                                     alert('メッセージの送信に失敗しました: ' + (response.data || '不明なエラー'));
