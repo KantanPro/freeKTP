@@ -128,7 +128,7 @@ class KTPWP_Plugin_Reference {
             'content' => $content,
             'section' => $section,
             'last_updated' => get_option( 'ktpwp_reference_last_updated', time() ),
-            'version' => get_option( 'ktpwp_reference_version', KTPWP_PLUGIN_VERSION )
+            'version' => get_option( 'ktpwp_reference_version', KANTANPRO_PLUGIN_VERSION )
         ) );
     }
 
@@ -606,7 +606,7 @@ return '<div class="ktpwp-reference-content">'
         
         // Update plugin reference metadata
         update_option( 'ktpwp_reference_last_updated', current_time( 'timestamp' ) );
-        update_option( 'ktpwp_reference_version', KTPWP_PLUGIN_VERSION );
+        update_option( 'ktpwp_reference_version', KANTANPRO_PLUGIN_VERSION );
         
         // Log activation event for debugging
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {

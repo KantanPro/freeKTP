@@ -142,8 +142,8 @@ class KTPWP_Shortcodes {
         global $current_user;
 
         // 基本情報の取得
-        $plugin_name = esc_html(KTPWP_PLUGIN_NAME);
-        $plugin_version = esc_html(KTPWP_PLUGIN_VERSION);
+        $plugin_name = esc_html(KANTANPRO_PLUGIN_NAME);
+        $plugin_version = esc_html(KANTANPRO_PLUGIN_VERSION);
         $icon_img = $this->get_plugin_icon();
 
         // ナビゲーション要素の生成
@@ -171,7 +171,7 @@ class KTPWP_Shortcodes {
      * @return string アイコンIMGタグ
      */
     private function get_plugin_icon() {
-        $icon_url = plugins_url('images/default/icon.png', KTPWP_PLUGIN_FILE);
+        $icon_url = plugins_url('images/default/icon.png', KANTANPRO_PLUGIN_FILE);
         return '<img src="' . esc_url($icon_url) . '" style="height:40px;vertical-align:middle;margin-right:8px;position:relative;top:-5px;">';
     }
 
@@ -522,7 +522,7 @@ class KTPWP_Shortcodes {
      * @param string $filename ファイル名
      */
     private function load_required_class($filename) {
-        $file_path = KTPWP_PLUGIN_DIR . 'includes/' . $filename;
+        $file_path = KANTANPRO_PLUGIN_DIR . 'includes/' . $filename;
 
         if (file_exists($file_path)) {
             require_once $file_path;

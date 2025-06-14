@@ -117,7 +117,7 @@ class KTPWP_Loader {
     private function autoload_classes() {
         foreach ( $this->class_map as $class_name => $file_path ) {
             if ( ! class_exists( $class_name ) ) {
-                $full_path = KTPWP_PLUGIN_DIR . $file_path;
+                $full_path = KANTANPRO_PLUGIN_DIR . $file_path;
                 if ( file_exists( $full_path ) ) {
                     require_once $full_path;
                 }
@@ -130,7 +130,7 @@ class KTPWP_Loader {
      */
     private function load_required_files() {
         foreach ( $this->required_files as $file ) {
-            $file_path = KTPWP_PLUGIN_DIR . $file;
+            $file_path = KANTANPRO_PLUGIN_DIR . $file;
             if ( file_exists( $file_path ) ) {
                 require_once $file_path;
             }
@@ -149,7 +149,7 @@ class KTPWP_Loader {
         }
         
         if ( isset( $this->class_map[ $class_name ] ) ) {
-            $file_path = KTPWP_PLUGIN_DIR . $this->class_map[ $class_name ];
+            $file_path = KANTANPRO_PLUGIN_DIR . $this->class_map[ $class_name ];
             if ( file_exists( $file_path ) ) {
                 require_once $file_path;
                 return class_exists( $class_name );
@@ -166,7 +166,7 @@ class KTPWP_Loader {
      * @return bool 読み込み成功の可否
      */
     public function load_file( $file_path ) {
-        $full_path = KTPWP_PLUGIN_DIR . $file_path;
+        $full_path = KANTANPRO_PLUGIN_DIR . $file_path;
         if ( file_exists( $full_path ) ) {
             require_once $full_path;
             return true;

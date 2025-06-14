@@ -189,7 +189,7 @@ function ktpwp_add_security_headers() {
 }
 add_action( 'admin_init', 'ktpwp_add_security_headers' );
 
-register_activation_hook(KTPWP_PLUGIN_FILE, array('KTP_Settings', 'activate'));
+register_activation_hook(KANTANPRO_PLUGIN_FILE, array('KTP_Settings', 'activate'));
 
 
 
@@ -431,12 +431,12 @@ function ktpwp_scripts_and_styles() {
     wp_add_inline_script('ktp-js', 'var ktpwpStaffChatShowLabel = ' . json_encode('表示') . ';');
     wp_add_inline_script('ktp-js', 'var ktpwpStaffChatHideLabel = ' . json_encode('非表示') . ';');
 
-    wp_register_style('ktp-css', plugins_url('css/styles.css', __FILE__) . '?v=' . time(), array(), KTPWP_PLUGIN_VERSION, 'all');
+    wp_register_style('ktp-css', plugins_url('css/styles.css', __FILE__) . '?v=' . time(), array(), KANTANPRO_PLUGIN_VERSION, 'all');
     wp_enqueue_style('ktp-css');
     // 進捗プルダウン用のスタイルシートを追加
-    wp_enqueue_style('ktp-progress-select', plugins_url('css/progress-select.css', __FILE__) . '?v=' . time(), array('ktp-css'), KTPWP_PLUGIN_VERSION, 'all');
+    wp_enqueue_style('ktp-progress-select', plugins_url('css/progress-select.css', __FILE__) . '?v=' . time(), array('ktp-css'), KANTANPRO_PLUGIN_VERSION, 'all');
     // 設定タブ用のスタイルシートを追加
-    wp_enqueue_style('ktp-setting-tab', plugins_url('css/ktp-setting-tab.css', __FILE__) . '?v=' . time(), array('ktp-css'), KTPWP_PLUGIN_VERSION, 'all');
+    wp_enqueue_style('ktp-setting-tab', plugins_url('css/ktp-setting-tab.css', __FILE__) . '?v=' . time(), array('ktp-css'), KANTANPRO_PLUGIN_VERSION, 'all');
 
     // Material Symbols アイコンフォントをプリロードとして読み込み
     wp_enqueue_style('material-symbols-outlined', 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0', array(), '1.0.0', 'all');
@@ -448,7 +448,7 @@ function ktpwp_scripts_and_styles() {
         echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">' . "\n";
     }, 1);
     wp_enqueue_script('jquery', 'https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js', array(), '3.5.1', true);
-    wp_enqueue_script('ktp-order-inline-projectname', plugins_url('js/ktp-order-inline-projectname.js', __FILE__), array('jquery'), KTPWP_PLUGIN_VERSION, true);
+    wp_enqueue_script('ktp-order-inline-projectname', plugins_url('js/ktp-order-inline-projectname.js', __FILE__), array('jquery'), KANTANPRO_PLUGIN_VERSION, true);
     // Nonceをjsに渡す（案件名インライン編集用）
     if (current_user_can('manage_options')) {
         wp_add_inline_script('ktp-order-inline-projectname', 'var ktpwp_inline_edit_nonce = ' . json_encode(array(
@@ -473,7 +473,7 @@ function ktpwp_scripts_and_styles() {
             'ktpwp-reference',
             plugins_url( 'js/plugin-reference.js', __FILE__ ),
             array( 'jquery' ),
-            KTPWP_PLUGIN_VERSION,
+            KANTANPRO_PLUGIN_VERSION,
             true
         );
 
@@ -547,9 +547,9 @@ function ktp_table_setup() {
             $setting->Create_Table('setting');
         }
 }
-register_activation_hook(KTPWP_PLUGIN_FILE, 'ktp_table_setup'); // テーブル作成処理
-register_activation_hook(KTPWP_PLUGIN_FILE, array('KTP_Settings', 'activate')); // 設定クラスのアクティベート処理
-register_activation_hook(KTPWP_PLUGIN_FILE, array('KTPWP_Plugin_Reference', 'on_plugin_activation')); // プラグインリファレンス更新処理
+register_activation_hook(KANTANPRO_PLUGIN_FILE, 'ktp_table_setup'); // テーブル作成処理
+register_activation_hook(KANTANPRO_PLUGIN_FILE, array('KTP_Settings', 'activate')); // 設定クラスのアクティベート処理
+register_activation_hook(KANTANPRO_PLUGIN_FILE, array('KTPWP_Plugin_Reference', 'on_plugin_activation')); // プラグインリファレンス更新処理
 
 function check_activation_key() {
     $activation_key = get_site_option('ktp_activation_key');
@@ -620,8 +620,8 @@ function KTPWP_Index(){
             $plugin_version = defined('MY_PLUGIN_VERSION') ? esc_html(MY_PLUGIN_VERSION) : '';
 
             // プラグイン名とバージョンを定数から取得
-            $plugin_name = esc_html(KTPWP_PLUGIN_NAME);
-            $plugin_version = esc_html(KTPWP_PLUGIN_VERSION);
+            $plugin_name = esc_html(KANTANPRO_PLUGIN_NAME);
+            $plugin_version = esc_html(KANTANPRO_PLUGIN_VERSION);
             $current_page_id = get_queried_object_id();
             $update_link_url = esc_url(get_permalink($current_page_id));
 

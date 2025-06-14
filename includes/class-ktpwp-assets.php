@@ -73,7 +73,7 @@ class KTPWP_Assets {
             'ktp-css' => array(
                 'src'    => 'css/styles.css',
                 'deps'   => array(),
-                'ver'    => KTPWP_PLUGIN_VERSION,
+                'ver'    => KANTANPRO_PLUGIN_VERSION,
                 'media'  => 'all',
                 'admin'  => false,
             ),
@@ -364,7 +364,7 @@ class KTPWP_Assets {
             // 外部URL
             return $path;
         }
-        return KTPWP_PLUGIN_URL . $path;
+        return KANTANPRO_PLUGIN_URL . $path;
     }
 
     /**

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // メインクラスファイルを読み込み
-require_once KTPWP_PLUGIN_DIR . 'includes/class-ktpwp-main.php';
+require_once KANTANPRO_PLUGIN_DIR . 'includes/class-ktpwp-main.php';
 
 /**
  * 後方互換性のためのエイリアスクラス

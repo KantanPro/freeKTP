@@ -136,7 +136,7 @@ class KTPWP_Database {
     private function load_required_classes() {
         foreach ($this->class_files as $class_name => $file_name) {
             if (!class_exists($class_name)) {
-                $file_path = KTPWP_PLUGIN_DIR . 'includes/' . $file_name;
+                $file_path = KANTANPRO_PLUGIN_DIR . 'includes/' . $file_name;
                 
                 if (file_exists($file_path)) {
                     // class-tab-service.php は現在スキップ
