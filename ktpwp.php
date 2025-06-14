@@ -52,6 +52,23 @@ if ( ! defined( 'MY_PLUGIN_URL' ) ) {
     define( 'MY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 
+// === GitHub自動アップデート: plugin-update-checker を利用 ===
+// 1. 事前に https://github.com/YahnisElsts/plugin-update-checker をダウンロードし、
+//    KantanPro/vendor/plugin-update-checker/ に配置してください。
+if ( file_exists( __DIR__ . '/vendor/plugin-update-checker/plugin-update-checker.php' ) ) {
+    require_once __DIR__ . '/vendor/plugin-update-checker/plugin-update-checker.php';
+
+    $kantanpro_update_checker = Puc_v4_Factory::buildUpdateChecker(
+        'https://github.com/KantanPro/freeKTP.git', // GitHubリポジトリURL（.git付き）
+        __FILE__,                              // プラグインのメインファイル
+        'KantanPro'                            // プラグインのスラッグ（ディレクトリ名）
+    );
+    $kantanpro_update_checker->setBranch('main'); // ブランチ名
+    $kantanpro_update_checker->getVcsApi()->enableReleaseAssets(); // リリースZIP優先
+    // プライベートリポジトリの場合は下記を有効化
+    // $kantanpro_update_checker->setAuthentication('your-github-personal-access-token');
+}
+
 /**
  * プラグインクラスの自動読み込み
  */
@@ -757,119 +774,6 @@ add_action('admin_menu', function() {
 });
 
 // GitHub Updater
-add_filter('pre_set_site_transient_update_plugins', 'kpwp_github_plugin_update');
-add_filter('plugins_api', 'kpwp_github_plugin_update_info', 10, 3);
-
-function kpwp_github_plugin_update($transient) {
-    if (empty($transient->checked)) {
-        return $transient;
-    }
-
-    // プラグイン情報
-    $plugin_slug = 'KantanPro/ktpwp.php';
-    $github_user = 'KantanPro'; // 正しいGitHubユーザー名
-    $github_repo = 'freeKTP'; // 正しいリポジトリ名（大文字小文字に注意）
-
-    // GitHubの最新リリース情報を取得
-    $response = wp_remote_get("https://api.github.com/repos/$github_user/$github_repo/releases/latest", [
-        'headers' => [
-            'Accept' => 'application/vnd.github.v3+json',
-            'User-Agent' => 'WordPress/' . get_bloginfo('version')
-        ]
-    ]);
-
-    if (is_wp_error($response)) {
-        return $transient;
-    }
-
-    $release = json_decode(wp_remote_retrieve_body($response));
-    if (empty($release) || empty($release->tag_name)) {
-        return $transient;
-    }
-
-    // 現在のバージョンを取得
-    $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_slug);
-    $current_version = $plugin_data['Version'];
-    $latest_version = ltrim($release->tag_name, 'v');
-
-
-    // 新しいバージョンがあればアップデート情報をセット
-    if (version_compare($current_version, $latest_version, '<')) {
-        // ZIPファイルのURLを見つける
-        $package_url = '';
-        if (isset($release->assets) && is_array($release->assets)) {
-            foreach ($release->assets as $asset) {
-                if (isset($asset->browser_download_url) &&
-                    strpos($asset->browser_download_url, '.zip') !== false) {
-                    $package_url = $asset->browser_download_url;
-                    break;
-                }
-            }
-        }
-
-        // アセットがなければzipballを使用
-        if (empty($package_url) && isset($release->zipball_url)) {
-            $package_url = $release->zipball_url;
-        }
-
-        if (!empty($package_url)) {
-            $transient->response[$plugin_slug] = (object)[
-                'slug' => dirname($plugin_slug),
-                'plugin' => $plugin_slug,
-                'new_version' => $latest_version,
-                'url' => $release->html_url,
-                'package' => $package_url,
-            ];
-        }
-    }
-    return $transient;
-}
-
-// プラグイン情報を取得する関数
-function kpwp_github_plugin_update_info($res, $action, $args) {
-    if ($action !== 'plugin_information' || !isset($args->slug) || $args->slug !== 'KantanPro') {
-        return $res;
-    }
-
-    $github_user = 'KantanPro';
-    $github_repo = 'freeKTP';
-
-    $response = wp_remote_get("https://api.github.com/repos/$github_user/$github_repo/releases/latest", [
-        'headers' => [
-            'Accept' => 'application/vnd.github.v3+json',
-            'User-Agent' => 'WordPress/' . get_bloginfo('version')
-        ]
-    ]);
-
-    if (is_wp_error($response)) {
-        return $res;
-    }
-
-    $release = json_decode(wp_remote_retrieve_body($response));
-    if (empty($release)) {
-        return $res;
-    }
-
-    $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/KantanPro/ktpwp.php');
-
-    $res = new stdClass();
-    $res->name = $plugin_data['Name'];
-    $res->slug = 'KantanPro';
-    $res->version = ltrim($release->tag_name, 'v');
-    $res->tested = get_bloginfo('version');
-    $res->requires = '5.0'; // 必要なWordPressのバージョン
-    $res->author = $plugin_data['Author'];
-    $res->author_profile = ''; // 作者プロフィールURL
-    $res->download_link = isset($release->zipball_url) ? $release->zipball_url : '';
-    $res->trunk = isset($release->zipball_url) ? $release->zipball_url : '';
-    $res->last_updated = isset($release->published_at) ? $release->published_at : '';
-    $res->sections = [
-        'description' => $plugin_data['Description'],
-        'changelog' => isset($release->body) ? $release->body : __('No changelog provided.', 'ktpwp'),
-    ];
-
-    return $res;
-}
 
 
 // 案件名インライン編集用Ajaxハンドラ
