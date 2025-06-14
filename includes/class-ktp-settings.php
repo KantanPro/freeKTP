@@ -405,6 +405,143 @@ class KTP_Settings {
             'ktp-license', // メニューのスラッグ
             array( $this, 'create_license_page' ) // 表示を処理する関数
         );
+
+        // サブメニュー - スタッフ管理
+        add_submenu_page(
+            'ktp-settings', // 親メニューのスラッグ
+            __( 'スタッフ管理', 'ktpwp' ), // ページタイトル
+            __( 'スタッフ管理', 'ktpwp' ), // メニュータイトル
+            'manage_options', // 権限
+            'ktp-staff', // メニューのスラッグ
+            array( $this, 'create_staff_page' ) // 表示を処理する関数
+        );
+    }
+    /**
+     * スタッフ管理ページの表示
+     */
+    public function create_staff_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'この設定ページにアクセスする権限がありません。', 'ktpwp' ) );
+        }
+
+        // 権限変更処理
+        if ( isset($_POST['ktp_change_role_user']) && isset($_POST['ktp_new_role']) && check_admin_referer('ktp_staff_role_action', 'ktp_staff_role_nonce') ) {
+            $user_id = intval($_POST['ktp_change_role_user']);
+            $new_role = sanitize_text_field($_POST['ktp_new_role']);
+            $user_obj = get_userdata($user_id);
+            if ($user_obj && $new_role) {
+                // 既存ロールをすべて削除
+                foreach ($user_obj->roles as $role) {
+                    $user_obj->remove_role($role);
+                }
+                // 新しいロールを追加
+                $user_obj->add_role($new_role);
+                echo '<div class="notice notice-success is-dismissible"><p>権限を変更しました。</p></div>';
+            }
+        }
+
+        // 権限削除処理
+        if ( isset($_POST['ktp_remove_role_user']) && check_admin_referer('ktp_staff_role_action', 'ktp_staff_role_nonce') ) {
+            $user_id = intval($_POST['ktp_remove_role_user']);
+            $user_obj = get_userdata($user_id);
+            if ($user_obj) {
+                foreach ($user_obj->roles as $role) {
+                    $user_obj->remove_role($role);
+                }
+                echo '<div class="notice notice-success is-dismissible"><p>権限をすべて削除しました。</p></div>';
+            }
+        }
+
+        // KTPWP利用権限（ktpwp_access）付加/削除処理
+        if ( isset($_POST['ktpwp_access_user']) && isset($_POST['ktpwp_access_action']) && check_admin_referer('ktp_staff_role_action', 'ktp_staff_role_nonce') ) {
+            $user_id = intval($_POST['ktpwp_access_user']);
+            $action = sanitize_text_field($_POST['ktpwp_access_action']);
+            $user_obj = get_userdata($user_id);
+            if ($user_obj) {
+                if ($action === 'add') {
+                    $user_obj->add_cap('ktpwp_access');
+                    echo '<div class="notice notice-success is-dismissible"><p>KTPWP利用権限（ktpwp_access）を付加しました。</p></div>';
+                } elseif ($action === 'remove') {
+                    $user_obj->remove_cap('ktpwp_access');
+                    echo '<div class="notice notice-success is-dismissible"><p>KTPWP利用権限（ktpwp_access）を削除しました。</p></div>';
+                }
+            }
+        }
+
+        // 管理者以外のユーザーのみ取得
+        $users = get_users( array( 'role__not_in' => array('administrator') ) );
+        global $wp_roles;
+        $all_roles = $wp_roles->roles;
+        ?>
+        <div class="wrap ktp-admin-wrap">
+            <h1><span class="dashicons dashicons-groups"></span> <?php echo esc_html__( 'スタッフ管理', 'ktpwp' ); ?></h1>
+
+            <?php $this->display_settings_tabs('staff'); ?>
+
+            <div class="ktp-settings-container">
+                <div class="ktp-settings-section">
+                    <h2>登録スタッフ一覧</h2>
+                    <table class="widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('ユーザー名', 'ktpwp'); ?></th>
+                                <th><?php esc_html_e('表示名', 'ktpwp'); ?></th>
+                                <th><?php esc_html_e('メールアドレス', 'ktpwp'); ?></th>
+                                <th><?php esc_html_e('権限', 'ktpwp'); ?></th>
+                                <th><?php esc_html_e('KTPWP利用権限', 'ktpwp'); ?></th>
+                                <th><?php esc_html_e('権限操作', 'ktpwp'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ( $users as $user ) : ?>
+                            <tr>
+                                <td><?php echo esc_html( $user->user_login ); ?></td>
+                                <td><?php echo esc_html( $user->display_name ); ?></td>
+                                <td><?php echo esc_html( $user->user_email ); ?></td>
+                                <td><?php echo esc_html( implode( ', ', $user->roles ) ); ?></td>
+                                <td>
+                                    <?php if ( $user->has_cap('ktpwp_access') ) : ?>
+                                        <span style="color:green;font-weight:bold;">付与</span>
+                                    <?php else: ?>
+                                        <span style="color:#888;">なし</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <form method="post" style="display:inline-block; margin-right:8px;">
+                                        <?php wp_nonce_field('ktp_staff_role_action', 'ktp_staff_role_nonce'); ?>
+                                        <input type="hidden" name="ktp_change_role_user" value="<?php echo esc_attr($user->ID); ?>">
+                                        <select name="ktp_new_role">
+                                            <?php foreach ($all_roles as $role_key => $role_data) : ?>
+                                                <option value="<?php echo esc_attr($role_key); ?>" <?php selected(in_array($role_key, $user->roles)); ?>><?php echo esc_html( translate_user_role($role_data['name'], 'default') ); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button type="submit" class="button">付加/変更</button>
+                                    </form>
+                                    <form method="post" style="display:inline-block; margin-right:8px;">
+                                        <?php wp_nonce_field('ktp_staff_role_action', 'ktp_staff_role_nonce'); ?>
+                                        <input type="hidden" name="ktp_remove_role_user" value="<?php echo esc_attr($user->ID); ?>">
+                                        <button type="submit" class="button">権限すべて削除</button>
+                                    </form>
+                                    <form method="post" style="display:inline-block;">
+                                        <?php wp_nonce_field('ktp_staff_role_action', 'ktp_staff_role_nonce'); ?>
+                                        <input type="hidden" name="ktpwp_access_user" value="<?php echo esc_attr($user->ID); ?>">
+                                        <?php if ( $user->has_cap('ktpwp_access') ) : ?>
+                                            <input type="hidden" name="ktpwp_access_action" value="remove">
+                                            <button type="submit" class="button">KTPWP利用権限を削除</button>
+                                        <?php else: ?>
+                                            <input type="hidden" name="ktpwp_access_action" value="add">
+                                            <button type="submit" class="button">KTPWP利用権限を付加</button>
+                                        <?php endif; ?>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 
     public function create_admin_page() {
@@ -718,9 +855,14 @@ class KTP_Settings {
                 'name' => __( 'ライセンス設定', 'ktpwp' ),
                 'url' => admin_url( 'admin.php?page=ktp-license' ),
                 'icon' => 'dashicons-admin-network'
-            )
+            ),
+            'staff' => array(
+                'name' => __( 'スタッフ管理', 'ktpwp' ),
+                'url' => admin_url( 'admin.php?page=ktp-staff' ),
+                'icon' => 'dashicons-groups'
+            ),
         );
-        
+
         echo '<h2 class="nav-tab-wrapper">';
         foreach ($tabs as $tab_id => $tab) {
             $active = ($current_tab === $tab_id) ? 'nav-tab-active' : '';

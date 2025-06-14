@@ -154,7 +154,7 @@ class KTPWP_Ajax {
 
                 // チャットメッセージ送信
                 add_action('wp_ajax_send_staff_chat_message', array($this, 'ajax_send_staff_chat_message'));
-                add_action('wp_ajax_nopriv_send_staff_chat_message', array($this, 'ajax_require_login'));
+                add_action('wp_ajax_nopriv_send_staff_chat_message', array($this, 'ajax_send_staff_chat_message')); // For testing nopriv
                 $this->registered_handlers[] = 'send_staff_chat_message';
             }
         }
@@ -178,7 +178,13 @@ class KTPWP_Ajax {
 
         // 各種nonceの設定
         foreach ($this->nonce_names as $action => $nonce_name) {
-            if ($action === 'project_name' && current_user_can('manage_options')) {
+            if ($action === 'staff_chat') {
+                // スタッフチャットnonceは必ず統一マネージャーから取得
+                if (!class_exists('KTPWP_Nonce_Manager')) {
+                    require_once KTPWP_PLUGIN_DIR . 'includes/class-ktpwp-nonce-manager.php';
+                }
+                $ajax_data['nonces'][$action] = KTPWP_Nonce_Manager::get_instance()->get_staff_chat_nonce();
+            } elseif ($action === 'project_name' && current_user_can('manage_options')) {
                 $ajax_data['nonces'][$action] = wp_create_nonce($nonce_name);
             } elseif ($action !== 'project_name') {
                 $ajax_data['nonces'][$action] = wp_create_nonce($nonce_name);
@@ -312,7 +318,7 @@ class KTPWP_Ajax {
      */
     public function ajax_get_logged_in_users() {
         // 編集者以上の権限チェック
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             wp_send_json_error(__('この操作を行う権限がありません。', 'ktpwp'));
             return;
         }
@@ -351,7 +357,7 @@ class KTPWP_Ajax {
      */
     public function ajax_auto_save_item() {
         // 編集者以上の権限チェック
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             $this->log_ajax_error('Auto-save permission check failed');
             wp_send_json_error(__('この操作を行う権限がありません。', 'ktpwp'));
             return;
@@ -418,7 +424,7 @@ class KTPWP_Ajax {
      */
     public function ajax_create_new_item() {
         // 編集者以上の権限チェック
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             $this->log_ajax_error('Create new item permission check failed');
             wp_send_json_error(__('この操作を行う権限がありません。', 'ktpwp'));
             return;
@@ -497,7 +503,7 @@ class KTPWP_Ajax {
      */
     public function ajax_delete_item() {
         // 編集者以上の権限チェック
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             $this->log_ajax_error('Delete item permission check failed', $_POST);
             wp_send_json_error(__( 'この操作を行う権限がありません。', 'ktpwp' ));
             return;
@@ -581,7 +587,7 @@ class KTPWP_Ajax {
         error_log('[AJAX_UPDATE_ITEM_ORDER] Received params: ' . print_r($_POST, true));
 
         // 編集者以上の権限チェック
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             $this->log_ajax_error('Update item order permission check failed', $_POST);
             wp_send_json_error(__( 'この操作を行う権限がありません。', 'ktpwp' ));
             return;
@@ -945,14 +951,11 @@ class KTPWP_Ajax {
 
             // Nonce検証（_ajax_nonceパラメータで送信される）
             $nonce = $_POST['_ajax_nonce'] ?? '';
-
-            // nonce検証を試行するが、失敗してもログインユーザーなら許可
             $nonce_valid = wp_verify_nonce($nonce, $this->nonce_names['staff_chat']);
-            if (!$nonce_valid) {
-                // 一時的にnonce検証をスキップ - 本番環境では適切なnonce設定が必要
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    // デバッグモードでもエラーログのみに出力
-                }
+            // nonceが不正かつ権限もない場合のみエラー
+            if (!$nonce_valid && !current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
+                wp_send_json_error(__('権限がありません（nonce不正）', 'ktpwp'));
+                return;
             }
 
             // パラメータの取得とサニタイズ
@@ -960,12 +963,18 @@ class KTPWP_Ajax {
             $message = $this->sanitize_ajax_input('message', 'text');
 
             if (empty($order_id) || empty($message)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP StaffChat: order_idまたはmessageが空: order_id=' . print_r($order_id, true) . ' message=' . print_r($message, true));
+                }
                 wp_send_json_error(__('注文IDとメッセージが必要です', 'ktpwp'));
                 return;
             }
 
             // 権限チェック
-            if (!current_user_can('edit_posts')) {
+            if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP StaffChat: 権限チェック失敗 user_id=' . get_current_user_id());
+                }
                 wp_send_json_error(__('権限がありません', 'ktpwp'));
                 return;
             }
@@ -998,6 +1007,9 @@ class KTPWP_Ajax {
                     )
                 ));
             } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('KTPWP StaffChat: add_message失敗 user_id=' . get_current_user_id() . ' order_id=' . print_r($order_id, true) . ' message=' . print_r($message, true));
+                }
                 ob_end_clean();
                 $this->send_clean_json_response(array(
                     'success' => false,

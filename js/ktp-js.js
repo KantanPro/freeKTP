@@ -284,6 +284,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 xhr.open('POST', url, true);
                 xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
+                // 送信パラメータをデバッグ出力
+                console.log('[KTPWPスタッフチャット送信] url:', url);
+                console.log('[KTPWPスタッフチャット送信] params:', params);
+                console.log('[KTPWPスタッフチャット送信] order_id:', orderId, 'message:', messageInput.value.trim());
+                if (typeof ktpwp_ajax !== 'undefined') {
+                    console.log('[KTPWPスタッフチャット送信] ktpwp_ajax:', ktpwp_ajax);
+                }
+
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
                         // 送信ボタンとメッセージ入力欄を復元
@@ -351,7 +359,17 @@ document.addEventListener('DOMContentLoaded', function () {
                                 alert('JSON解析エラー: ' + e.message);
                             }
                         } else {
-                            alert('サーバーエラーが発生しました');
+                            let msg = 'サーバーエラーが発生しました';
+                            if (xhr.responseText) {
+                                try {
+                                    const resp = JSON.parse(xhr.responseText);
+                                    if (resp && resp.data) msg += '\n' + resp.data;
+                                } catch(e) {
+                                    msg += '\n' + xhr.responseText;
+                                }
+                            }
+                            alert(msg);
+                            console.error('スタッフチャット送信エラー詳細:', xhr.responseText);
                         }
                     }
                 };

@@ -310,7 +310,7 @@ class Kntan_Order_Class {
         // デバッグログ追加
 
         // Check user capabilities - allow editors and above to access
-        if ( ! current_user_can( 'edit_posts' ) ) {
+        if ( ! current_user_can( 'edit_posts' ) && !current_user_can('ktpwp_access') ) {
             wp_die( __( 'You do not have sufficient permissions to access this page.', 'ktpwp' ) );
         }
 
@@ -346,7 +346,7 @@ class Kntan_Order_Class {
                  wp_verify_nonce( $_POST['staff_chat_nonce'], 'staff_chat_action' ) ) {
 
                 // Check user capabilities
-                if ( current_user_can( 'edit_posts' ) ) {
+                if ( current_user_can( 'edit_posts' ) || current_user_can('ktpwp_access') ) {
                     $order_id = absint( $_POST['staff_chat_order_id'] );
                     $message = sanitize_textarea_field( $_POST['staff_chat_message'] );
 
@@ -712,7 +712,7 @@ class Kntan_Order_Class {
             }
 
             // Check user capabilities
-            if ( ! current_user_can( 'edit_posts' ) ) {
+            if ( ! current_user_can( 'edit_posts' ) && !current_user_can('ktpwp_access') ) {
                 wp_die( __( 'You do not have sufficient permissions to update invoice items.', 'ktpwp' ) );
             }
 

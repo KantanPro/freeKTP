@@ -42,6 +42,15 @@ if ( ! defined( 'KANTANPRO_PLUGIN_DIR' ) ) {
 if ( ! defined( 'KANTANPRO_PLUGIN_URL' ) ) {
     define( 'KANTANPRO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
+
+// KTPWP Prefixed constants for internal consistency
+if ( ! defined( 'KTPWP_PLUGIN_FILE' ) ) {
+    define( 'KTPWP_PLUGIN_FILE', __FILE__ );
+}
+if ( ! defined( 'KTPWP_PLUGIN_DIR' ) ) {
+    define( 'KTPWP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+}
+
 if ( ! defined( 'MY_PLUGIN_VERSION' ) ) {
     define( 'MY_PLUGIN_VERSION', KANTANPRO_PLUGIN_VERSION );
 }
@@ -130,18 +139,21 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 }
 
 // メインクラスの初期化はinit以降に遅延（翻訳エラー防止）
-add_action('init', function() {
+add_action('init', function() { // Changed from plugins_loaded to init
     if ( class_exists( 'KTPWP_Main' ) ) {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'KTPWP Plugin: KTPWP_Main class found, initializing (delayed)...' );
+            error_log( 'KTPWP Plugin: KTPWP_Main class found, initializing on init hook...' );
         }
         KTPWP_Main::get_instance();
     } else {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'KTPWP Plugin: KTPWP_Main class not found' );
+            error_log( 'KTPWP Plugin: KTPWP_Main class not found on init hook' );
         }
     }
-    // Contact Form 7連携クラスも必ず初期化
+}, 0); // Run early on init hook
+
+// Contact Form 7連携クラスも必ず初期化
+add_action('plugins_loaded', function() { // Changed from 'init' to 'plugins_loaded'
     if ( class_exists( 'KTPWP_Contact_Form' ) ) {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             error_log( 'KTPWP Plugin: KTPWP_Contact_Form class found, initializing...' );
@@ -467,7 +479,7 @@ function ktpwp_scripts_and_styles() {
     wp_enqueue_script('jquery', 'https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js', array(), '3.5.1', true);
     wp_enqueue_script('ktp-order-inline-projectname', plugins_url('js/ktp-order-inline-projectname.js', __FILE__), array('jquery'), KANTANPRO_PLUGIN_VERSION, true);
     // Nonceをjsに渡す（案件名インライン編集用）
-    if (current_user_can('manage_options')) {
+    if (current_user_can('manage_options') || current_user_can('ktpwp_access')) {
         wp_add_inline_script('ktp-order-inline-projectname', 'var ktpwp_inline_edit_nonce = ' . json_encode(array(
             'nonce' => wp_create_nonce('ktp_update_project_name')
         )) . ';');
@@ -582,8 +594,8 @@ function KTPWP_Index(){
     //すべてのタブのショートコード[kantanAllTab]
     function kantanAllTab(){
 
-        //ログイン中で編集者権限がある場合のみ
-        if (is_user_logged_in() && current_user_can('edit_posts')) {
+        //ログイン中で編集者権限またはKTPWP利用権限がある場合のみ
+        if (is_user_logged_in() && (current_user_can('edit_posts') || current_user_can('ktpwp_access'))) {
             // XSS対策: 画面に出力する変数は必ずエスケープ
 
             // ユーザーのログインログアウト状況を取得するためのAjaxを登録
@@ -781,7 +793,7 @@ add_action('admin_menu', function() {
 // 案件名インライン編集用Ajaxハンドラ（管理者のみ許可＆nonce検証）
 add_action('wp_ajax_ktp_update_project_name', function() {
     // 権限チェック
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can('manage_options') && !current_user_can('ktpwp_access')) {
         wp_send_json_error(__('権限がありません', 'ktpwp'));
     }
 
@@ -847,4 +859,3 @@ if (!class_exists('Kntan_Report_Class')) {
  *
  * @param WPCF7_ContactForm $contact_form Contact Form 7のフォームオブジェクト.
  */
-// （不要なグローバル関数を削除しました）

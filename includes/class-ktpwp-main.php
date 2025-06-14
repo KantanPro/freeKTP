@@ -106,24 +106,34 @@ class KTPWP_Main {
      * コンストラクタ
      */
     private function __construct() {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP_Main: Constructor called.');
+        }
         $this->init_hooks();
+        $this->init(); // Call init() directly
     }
 
     /**
      * フック初期化
      */
     private function init_hooks() {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP_Main: init_hooks called.');
+        }
         // プラグイン初期化
-        add_action( 'plugins_loaded', array( $this, 'init' ) );
+        // add_action( 'plugins_loaded', array( $this, 'init' ) ); // Removed this line
 
         // 翻訳ファイル読み込み
-        add_action( 'init', array( $this, 'load_textdomain' ) );
+        add_action( 'init', array( $this, 'load_textdomain' ), 1 ); // Ensure load_textdomain runs on init
     }
 
     /**
      * プラグイン初期化
      */
     public function init() {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP_Main: init() CALLED.');
+        }
         // 専門クラスの初期化
         $this->init_components();
 
@@ -142,23 +152,39 @@ class KTPWP_Main {
 
         // AJAX機能は自動的に初期化される（シングルトンパターン）
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'KTPWP_Main: init() completed successfully' );
+            error_log( 'KTPWP_Main: init() processing, KTPWP_Ajax instance should be available now if initialized in init_components.' );
+            if (isset($this->ajax) && $this->ajax instanceof KTPWP_Ajax) {
+                error_log('KTPWP_Main: KTPWP_Ajax instance IS available.');
+            } else {
+                error_log('KTPWP_Main: KTPWP_Ajax instance IS NOT available after init_components.');
+            }
         }
 
         // その他の機能初期化
         $this->init_additional_features();
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'KTPWP_Main: init() completed successfully.' );
+        }
     }
 
     /**
      * 専門クラスコンポーネントの初期化
      */
     private function init_components() {
-        // 編集者権限がない場合は、主要コンポーネントを初期化しない
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('KTPWP_Main: init_components() CALLED.');
+        }
+
+        // KTPWP_Ajax は常に初期化する
+        if (class_exists('KTPWP_Ajax')) {
+            $this->ajax = KTPWP_Ajax::get_instance();
+        }
+
+        // 編集者権限がない場合は、他の主要コンポーネントを初期化しない
         if ( ! current_user_can( 'edit_posts' ) ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'KTPWP_Main: User does not have edit_posts capability. Skipping component initialization.' );
+                error_log('KTPWP_Main: User cannot edit_posts. Some components might not be initialized.');
             }
-            
             // Contact Form 7 連携は権限に関係なく初期化する（フロントエンドで必要）
             if ( class_exists( 'KTPWP_Contact_Form' ) ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -177,49 +203,34 @@ class KTPWP_Main {
             return;
         }
 
-        // スタッフチャットAJAX機能に必要な最小限のクラスのみ初期化
-        try {
-            // AJAXハンドラーの初期化（最優先）
-            if ( class_exists( 'KTPWP_Ajax' ) ) {
-                $this->ajax = KTPWP_Ajax::get_instance();
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'KTPWP_Main: KTPWP_Ajax initialized successfully' );
-                }
+        // アセット管理（シングルトンパターンでない場合は通常のインスタンス化）
+        if ( class_exists( 'KTPWP_Assets' ) ) {
+            if ( method_exists( 'KTPWP_Assets', 'get_instance' ) ) {
+                $this->assets = KTPWP_Assets::get_instance();
+            } else {
+                $this->assets = new KTPWP_Assets();
+                $this->assets->init();
             }
-
-            // アセット管理（シングルトンパターンでない場合は通常のインスタンス化）
-            if ( class_exists( 'KTPWP_Assets' ) ) {
-                if ( method_exists( 'KTPWP_Assets', 'get_instance' ) ) {
-                    $this->assets = KTPWP_Assets::get_instance();
-                } else {
-                    $this->assets = new KTPWP_Assets();
-                    $this->assets->init();
-                }
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'KTPWP_Main: KTPWP_Assets initialized successfully' );
-                }
-            }
-
-            // 他のクラスは後で段階的に追加
-            /*
-            $this->loader = KTPWP_Loader::get_instance();
-            $this->security = KTPWP_Security::get_instance();
-            $this->shortcodes = KTPWP_Shortcodes::get_instance();
-            $this->redirect = KTPWP_Redirect::get_instance();
-            $this->github_updater = KTPWP_GitHub_Updater::get_instance();
-            $this->database = KTPWP_Database::get_instance();
-            */
-
-            // Contact Form 7連携の初期化
-            if ( class_exists( 'KTPWP_Contact_Form' ) ) {
-                $this->contact_form = KTPWP_Contact_Form::get_instance();
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'KTPWP_Main: KTPWP_Contact_Form initialized successfully' );
-                }
-            }
-        } catch ( Exception $e ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'KTPWP_Main init_components error: ' . $e->getMessage() );
+                error_log( 'KTPWP_Main: KTPWP_Assets initialized successfully' );
+            }
+        }
+
+        // 他のクラスは後で段階的に追加
+        /*
+        $this->loader = KTPWP_Loader::get_instance();
+        $this->security = KTPWP_Security::get_instance();
+        $this->shortcodes = KTPWP_Shortcodes::get_instance();
+        $this->redirect = KTPWP_Redirect::get_instance();
+        $this->github_updater = KTPWP_GitHub_Updater::get_instance();
+        $this->database = KTPWP_Database::get_instance();
+        */
+
+        // Contact Form 7連携の初期化
+        if ( class_exists( 'KTPWP_Contact_Form' ) ) {
+            $this->contact_form = KTPWP_Contact_Form::get_instance();
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'KTPWP_Main: KTPWP_Contact_Form initialized successfully' );
             }
         }
     }

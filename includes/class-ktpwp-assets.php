@@ -188,9 +188,9 @@ class KTPWP_Assets {
      */
     public function enqueue_frontend_assets() {
         // 編集者権限がない場合はアセットを読み込まない
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('KTPWP_Assets: User does not have edit_posts capability. Skipping asset enqueue.');
+                error_log('KTPWP_Assets: User does not have edit_posts/ktpwp_access capability. Skipping asset enqueue.');
             }
             return;
         }
@@ -439,7 +439,7 @@ class KTPWP_Assets {
      * wp_headでAJAX設定を出力
      */
     public function output_ajax_config() {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return;
         }
         if (!wp_script_is('ktp-js', 'enqueued') && !wp_script_is('ktp-js', 'done')) {
@@ -464,7 +464,7 @@ class KTPWP_Assets {
      * wp_footerでAJAX設定のフォールバック出力
      */
     public function output_ajax_config_fallback() {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return;
         }
         echo '<script type="text/javascript">';

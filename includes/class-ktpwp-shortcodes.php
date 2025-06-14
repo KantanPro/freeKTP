@@ -102,7 +102,7 @@ class KTPWP_Shortcodes {
         if (!is_user_logged_in()) { // まずログインしているかチェック
             return $this->render_login_error();
         }
-        if (!current_user_can('edit_posts')) { // 次に権限をチェック
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) { // 次に権限をチェック
             return $this->render_permission_error(); // 権限がない場合は専用のエラーメッセージ
         }
 
@@ -184,7 +184,7 @@ class KTPWP_Shortcodes {
         global $current_user;
 
         // 厳密なログイン状態確認
-        if (!is_user_logged_in() || !current_user_can('edit_posts') || !$current_user || $current_user->ID <= 0) {
+        if (!is_user_logged_in() || (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) || !$current_user || $current_user->ID <= 0) {
             return '';
         }
 
@@ -209,7 +209,7 @@ class KTPWP_Shortcodes {
         global $current_user;
 
         // ログイン状態とセッション確認
-        if (!is_user_logged_in() || !current_user_can('edit_posts') || !$current_user || $current_user->ID <= 0) {
+        if (!is_user_logged_in() || (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) || !$current_user || $current_user->ID <= 0) {
             return '';
         }
 
@@ -341,7 +341,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_list_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('Kantan_List_Class')) {
@@ -363,7 +363,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_order_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('Kntan_Order_Class')) {
@@ -386,7 +386,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_client_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('Kntan_Client_Class')) {
@@ -397,7 +397,7 @@ class KTPWP_Shortcodes {
             $client = new Kntan_Client_Class();
 
             // 管理者権限がある場合のみテーブル操作 -> 編集者権限に変更
-            if (current_user_can('edit_posts')) {
+            if (current_user_can('edit_posts') || current_user_can('ktpwp_access')) {
                 $client->Create_Table($tab_name);
                 $client->Update_Table($tab_name);
             }
@@ -415,7 +415,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_service_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('Kntan_Service_Class')) {
@@ -444,7 +444,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_supplier_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('Kantan_Supplier_Class')) {
@@ -473,7 +473,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_report_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('KTPWP_Report_Class')) {
@@ -495,7 +495,7 @@ class KTPWP_Shortcodes {
      * @return string コンテンツHTML
      */
     private function get_setting_content($tab_name) {
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('ktpwp_access')) {
             return $this->render_permission_error();
         }
         if (!class_exists('KTPWP_Setting_Class')) {

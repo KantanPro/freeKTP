@@ -252,13 +252,23 @@ class KTPWP_Staff_Chat {
      * @return bool True on success, false on failure
      */
     public function add_message( $order_id, $message ) {
-        if ( ! $order_id || $order_id <= 0 || empty( trim( $message ) ) ) {
+        if ( ! $order_id || $order_id <= 0 ) {
+            error_log( 'KTPWP StaffChat: add_message failed - invalid order_id: ' . print_r($order_id, true) );
+            return false;
+        }
+        if ( empty( trim( $message ) ) ) {
+            error_log( 'KTPWP StaffChat: add_message failed - empty message for order_id: ' . print_r($order_id, true) );
             return false;
         }
 
         // Check user permissions
         $current_user_id = get_current_user_id();
-        if ( ! $current_user_id || ! current_user_can( 'edit_posts' ) ) {
+        if ( ! $current_user_id ) {
+            error_log( 'KTPWP StaffChat: add_message failed - no current user for order_id: ' . print_r($order_id, true) );
+            return false;
+        }
+        if ( ! current_user_can( 'edit_posts' ) && ! current_user_can( 'ktpwp_access' ) ) {
+            error_log( 'KTPWP StaffChat: add_message failed - permission denied for user_id: ' . $current_user_id . ' order_id: ' . print_r($order_id, true) );
             return false;
         }
 
@@ -268,15 +278,16 @@ class KTPWP_Staff_Chat {
         // Get user info
         $user_info = get_userdata( $current_user_id );
         if ( ! $user_info ) {
+            error_log( 'KTPWP StaffChat: add_message failed - user not found for user_id: ' . $current_user_id . ' order_id: ' . print_r($order_id, true) );
             return false;
         }
 
         $display_name = $user_info->display_name ? $user_info->display_name : $user_info->user_login;
 
         // デバッグログを追加
-        error_log('KTPWP: add_message - order_id: ' . $order_id . ', message: ' . $message);
-        error_log('KTPWP: add_message - table_name: ' . $table_name);
-        error_log('KTPWP: add_message - user_id: ' . $current_user_id . ', display_name: ' . $display_name);
+        error_log('KTPWP StaffChat: add_message start - order_id: ' . $order_id . ', message: ' . $message);
+        error_log('KTPWP StaffChat: add_message - table_name: ' . $table_name);
+        error_log('KTPWP StaffChat: add_message - user_id: ' . $current_user_id . ', display_name: ' . $display_name);
 
         // Start transaction for concurrent access
         $wpdb->query( 'START TRANSACTION' );
@@ -290,6 +301,7 @@ class KTPWP_Staff_Chat {
             ) );
 
             if ( ! $order_exists ) {
+                error_log( 'KTPWP StaffChat: add_message failed - order does not exist: ' . print_r($order_id, true) );
                 throw new Exception( 'Order does not exist' );
             }
 
@@ -316,14 +328,16 @@ class KTPWP_Staff_Chat {
 
             if ( $inserted ) {
                 $wpdb->query( 'COMMIT' );
+                error_log('KTPWP StaffChat: add_message success - order_id: ' . $order_id . ', user_id: ' . $current_user_id);
                 return true;
             } else {
+                error_log( 'KTPWP StaffChat: add_message failed - DB insert error: ' . $wpdb->last_error . ' order_id: ' . print_r($order_id, true) );
                 throw new Exception( 'Failed to insert message: ' . $wpdb->last_error );
             }
 
         } catch ( Exception $e ) {
             $wpdb->query( 'ROLLBACK' );
-            error_log( 'KTPWP: Exception in add_message: ' . $e->getMessage() );
+            error_log( 'KTPWP StaffChat: Exception in add_message: ' . $e->getMessage() . ' order_id: ' . print_r($order_id, true) );
             return false;
         }
     }
@@ -367,7 +381,7 @@ class KTPWP_Staff_Chat {
             // For orders without existing chat messages, create initial message with current user
             $current_user_id = get_current_user_id();
 
-            if ( $current_user_id && current_user_can( 'edit_posts' ) ) {
+            if ( $current_user_id && ( current_user_can( 'edit_posts' ) || current_user_can( 'ktpwp_access' ) ) ) {
                 $this->create_initial_chat( $order_id, $current_user_id );
                 $messages = $this->get_messages( $order_id );
             }
@@ -465,7 +479,7 @@ class KTPWP_Staff_Chat {
         $html .= '</div>'; // .staff-chat-messages
 
         // Message input form (for users with edit permissions only)
-        $can_edit = current_user_can( 'edit_posts' );
+        $can_edit = current_user_can( 'edit_posts' ) || current_user_can( 'ktpwp_access' );
 
         if ( $can_edit ) {
             $html .= '<form class="staff-chat-form" method="post" action="" id="staff-chat-form">';
