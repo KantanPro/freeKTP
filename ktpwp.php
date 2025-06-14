@@ -58,13 +58,13 @@ if ( ! defined( 'MY_PLUGIN_URL' ) ) {
 if ( file_exists( __DIR__ . '/vendor/plugin-update-checker/plugin-update-checker.php' ) ) {
     require_once __DIR__ . '/vendor/plugin-update-checker/plugin-update-checker.php';
 
-    $kantanpro_update_checker = Puc_v4_Factory::buildUpdateChecker(
-        'https://github.com/KantanPro/freeKTP.git', // GitHubリポジトリURL（.git付き）
-        __FILE__,                              // プラグインのメインファイル
-        'KantanPro'                            // プラグインのスラッグ（ディレクトリ名）
+    $kantanpro_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+        'https://github.com/KantanPro/freeKTP.git', // GitHubリポジトリURL
+        __FILE__,                                   // プラグインのメインファイル
+        'KantanPro'                                 // プラグインのスラッグ
     );
-    $kantanpro_update_checker->setBranch('main'); // ブランチ名
-    $kantanpro_update_checker->getVcsApi()->enableReleaseAssets(); // リリースZIP優先
+    $kantanpro_update_checker->setBranch('main');
+    $kantanpro_update_checker->getVcsApi()->enableReleaseAssets();
     // プライベートリポジトリの場合は下記を有効化
     // $kantanpro_update_checker->setAuthentication('your-github-personal-access-token');
 }
