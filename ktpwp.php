@@ -767,8 +767,8 @@ function kpwp_github_plugin_update($transient) {
 
     // プラグイン情報
     $plugin_slug = 'KTPWP/ktpwp.php';
-    $github_user = 'aiojiipg'; // 正しいGitHubユーザー名
-    $github_repo = 'ktpwp'; // 正しいリポジトリ名（大文字小文字に注意）
+    $github_user = 'KantanPro'; // 正しいGitHubユーザー名
+    $github_repo = 'freeKTP'; // 正しいリポジトリ名（大文字小文字に注意）
 
     // GitHubの最新リリース情報を取得
     $response = wp_remote_get("https://api.github.com/repos/$github_user/$github_repo/releases/latest", [
@@ -831,8 +831,8 @@ function kpwp_github_plugin_update_info($res, $action, $args) {
         return $res;
     }
 
-    $github_user = 'aiojiipg';
-    $github_repo = 'ktpwp';
+    $github_user = 'KantanPro';
+    $github_repo = 'freeKTP';
 
     $response = wp_remote_get("https://api.github.com/repos/$github_user/$github_repo/releases/latest", [
         'headers' => [
