@@ -78,87 +78,89 @@
     }
 
     // 新しい行を追加（重複防止機能付き）
-    function addNewRow(currentRow) {
-        console.log('[COST] addNewRow開始');
-        // 既に追加処理中の場合はスキップ
-        if (window.ktpAddingCostRow === true) {
-            console.log('[COST] 既に処理中のため中止 (ktpAddingCostRow is true at start)');
-            return false; // 処理しなかった
-        }
+    function addNewRow(currentRow, callId) { // callId を受け取る
+        console.log(`[COST][${callId}] addNewRow開始 (呼び出し元ID: ${callId})`);
 
-        // 追加処理中フラグを設定
-        window.ktpAddingCostRow = true;
-        console.log('[COST] ktpAddingCostRow を true に設定 (addNewRow)');
+        // 品名チェック (addNewRow関数側でも念のため)
+        let rawProductName = currentRow.find('input.product-name').val();
+        if (typeof rawProductName !== 'string') {
+            rawProductName = currentRow.find('input[name$="[product_name]"]').val();
+        }
+        // const productName = (typeof rawProductName === 'string') ? rawProductName.trim() : '';
+        // 修正: addNewRow内の品名チェックは、呼び出し元で既に行われているため、ここではログ出力のみに留めるか、
+        // もし再度チェックするなら、その結果に基づいて早期リターンする。
+        // 今回は呼び出し元を信頼し、ここではチェックを簡略化または削除の方向で検討したが、
+        // 念のため残し、警告ログを出す。
+        const productNameValue = (typeof rawProductName === 'string') ? rawProductName.trim() : '';
+        if (productNameValue === '') {
+            // alert('品名を入力してください。(addNewRow)'); // クリックハンドラでアラートを出すので、ここでは不要
+            console.warn(`[COST][${callId}] addNewRow: 品名が空の状態で呼び出されましたが、処理を続行します（本来はクリックハンドラでブロックされるべきです）。`);
+            // return false; // ここで return false すると、クリックハンドラの品名チェックが機能していない場合に二重チェックになる
+                          // ただし、現状問題が解決していないため、ここでも止めることを検討したが、まずはログで状況把握
+        }
+        // End of added check
+
+        console.log(`[COST][${callId}] addNewRow 本処理開始`);
+        // フラグ管理はクリックハンドラに集約
+
+        const newIndex = $('.cost-items-table tbody tr').length;
+        const newRowHtml = `
+            <tr class="cost-item-row" data-row-id="0" data-newly-added="true">
+                <td class="actions-column">
+                    <span class="drag-handle" title="ドラッグして並び替え">&#9776;</span>
+                    <button type="button" class="btn-add-row" title="行を追加">+</button>
+                    <button type="button" class="btn-delete-row" title="行を削除">×</button>
+                    <button type="button" class="btn-move-row" title="行を移動">></button>
+                </td>
+                <td>
+                    <input type="text" name="cost_items[${newIndex}][product_name]" class="cost-item-input product-name" value="">
+                    <input type="hidden" name="cost_items[${newIndex}][id]" value="0">
+                </td>
+                <td style="text-align:left;">
+                    <input type="number" name="cost_items[${newIndex}][price]" class="cost-item-input price" value="0" step="1" min="0" style="text-align:left;" disabled>
+                </td>
+                <td style="text-align:left;">
+                    <input type="number" name="cost_items[${newIndex}][quantity]" class="cost-item-input quantity" value="0" step="1" min="0" style="text-align:left;" disabled>
+                </td>
+                <td>
+                    <input type="text" name="cost_items[${newIndex}][unit]" class="cost-item-input unit" value="式" disabled>
+                </td>
+                <td style="text-align:left;">
+                    <input type="number" name="cost_items[${newIndex}][amount]" class="cost-item-input amount" value="" step="1" readonly style="text-align:left;">
+                </td>
+                <td>
+                    <input type="text" name="cost_items[${newIndex}][remarks]" class="cost-item-input remarks" value="" disabled>
+                    <input type="hidden" name="cost_items[${newIndex}][sort_order]" value="${newIndex + 1}">
+                </td>
+            </tr>
+        `;
 
         let success = false;
         try {
-            const table = currentRow.closest('table');
-            const tbody = table.find('tbody');
-
-            // 新しいインデックスを取得
-            let maxIndex = -1;
-            tbody.find('input[name*="cost_items["]').each(function () {
-                const name = $(this).attr('name');
-                const match = name.match(/cost_items\\[(\\d+)\\]/);
-                if (match) {
-                    const index = parseInt(match[1], 10);
-                    if (index > maxIndex) {
-                        maxIndex = index;
-                    }
-                }
-            });
-            const newIndex = maxIndex + 1;
-            console.log('[COST] 新しいインデックス:', newIndex);
-
-            const newRowHtml = `
-                <tr class="cost-item-row" data-row-id="0" data-newly-added="true">
-                    <td class="actions-column">
-                        <span class="drag-handle" title="ドラッグして並び替え" tabindex="-1">&#9776;</span>
-                        <button type="button" class="btn-add-row" title="行を追加" tabindex="-1">+</button>
-                        <button type="button" class="btn-delete-row" title="行を削除" tabindex="-1">×</button>
-                        <button type="button" class="btn-move-row" title="行を移動" tabindex="-1">></button>
-                    </td>
-                    <td>
-                        <input type="text" name="cost_items[${newIndex}][product_name]" value="" class="cost-item-input product-name" tabindex="0" />
-                        <input type="hidden" name="cost_items[${newIndex}][id]" value="0" />
-                    </td>
-                    <td style="text-align:left;">
-                        <input type="number" name="cost_items[${newIndex}][price]" value="0" class="cost-item-input price" step="1" min="0" style="text-align:left;" disabled tabindex="0" />
-                    </td>
-                    <td style="text-align:left;">
-                        <input type="number" name="cost_items[${newIndex}][quantity]" value="1" class="cost-item-input quantity" step="1" min="0" style="text-align:left;" disabled tabindex="0" />
-                    </td>
-                    <td>
-                        <input type="text" name="cost_items[${newIndex}][unit]" value="式" class="cost-item-input unit" disabled tabindex="0" />
-                    </td>
-                    <td style="text-align:left;">
-                        <input type="number" name="cost_items[${newIndex}][amount]" value="0" class="cost-item-input amount" step="1" readonly style="text-align:left;" tabindex="0" />
-                    </td>
-                    <td>
-                        <input type="text" name="cost_items[${newIndex}][remarks]" value="" class="cost-item-input remarks" disabled tabindex="0" />
-                    </td>
-                </tr>
-            `;
+            console.log(`[COST][${callId}] currentRow.after(newRowHtml) を実行する直前。currentRow:`, currentRow[0].outerHTML);
             currentRow.after(newRowHtml);
             const $newRow = currentRow.next();
-            console.log('[COST] 新しい行が追加されました - インデックス:', newIndex);
-
-            // 新しく追加された行の product_name にフォーカス
-            $newRow.find('.product-name').focus();
-            success = true;
+            if ($newRow && $newRow.length > 0 && $newRow.hasClass('cost-item-row')) {
+                console.log(`[COST][${callId}] 新しい行がDOMに追加されました。`);
+                
+                // 新しい行で金額の自動計算を実行
+                calculateAmount($newRow);
+                
+                $newRow.find('.product-name').focus();
+                success = true;
+            } else {
+                console.error(`[COST][${callId}] 新しい行の追加に失敗したか、見つかりませんでした。$newRow:`, $newRow);
+                success = false;
+            }
 
         } catch (error) {
-            console.error('[COST] addNewRow エラー:', error);
+            console.error(`[COST][${callId}] addNewRow エラー:`, error);
             success = false;
         } finally {
-            // このsetTimeoutは、addNewRowが実際に処理を試みた場合にのみ実行されるべきフラグ解除
-            // (つまり、ktpAddingCostRowがこの関数内でtrueに設定された場合)
-            setTimeout(() => {
-                window.ktpAddingCostRow = false;
-                console.log('[COST] ktpAddingCostRow を false に設定 (addNewRow finally setTimeout)');
-            }, 100); // 100ms後にフラグ解除
+            // フラグ解除はクリックハンドラで行う
+            console.log(`[COST][${callId}] addNewRow終了`);
         }
-        return success; // 処理の成否を返す
+        return success;
     }
 
     // 行を削除
@@ -499,53 +501,77 @@
         // });
 
         // [+]ボタンで行追加（手動追加のみ）- イベント重複を防ぐ
-        $(document).off('click.ktpCostAdd', '.cost-items-table .btn-add-row').on('click.ktpCostAdd', '.cost-items-table .btn-add-row', function (e) {
+        // より強力に既存のクリックハンドラを全て解除し、その後で名前空間付きのハンドラを1つだけバインドする
+        $(document).off('click', '.cost-items-table .btn-add-row'); // 名前空間なしで全て解除
+        $('body').off('click', '.cost-items-table .btn-add-row');   // bodyからの委譲も同様に解除
+        $('.cost-items-table').off('click', '.btn-add-row');        // テーブル要素からの委譲も同様に解除
+
+        // その後、私たちの意図する名前空間付きのハンドラを登録
+        $(document).on('click.ktpCostAdd', '.cost-items-table .btn-add-row', function (e) {
+            const clickId = Date.now(); // Define clickId at the beginning of the handler
+            console.log(`[COST][${clickId}] +ボタンクリックイベント発生 (ktpCostAdd - 強力解除後)`); 
+
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation(); // 他のハンドラも止める
+            e.stopImmediatePropagation(); // 同じ要素の他のハンドラを止める
 
             const $button = $(this);
+            const currentRow = $button.closest('tr');
+
+            // 品名取得（クラス優先、なければname属性）- クリックハンドラ側での先行チェック
+            let rawProductNameCH = currentRow.find('input.product-name').val();
+            if (typeof rawProductNameCH !== 'string') {
+                rawProductNameCH = currentRow.find('input[name$="[product_name]"]').val();
+            }
+            const productNameValueCH = (typeof rawProductNameCH === 'string') ? rawProductNameCH.trim() : '';
+            if (productNameValueCH === '') {
+                alert('品名を入力してください。'); // クリックハンドラからのアラート
+                console.log(`[COST][${clickId}] クリックハンドラ: 品名未入力。 addNewRow を呼び出さずに処理を中断します。これがこのハンドラの最後のログになるはずです。`);
+                return false; // addNewRowを呼び出す前に中断
+            }
+
+            console.log(`[COST][${clickId}] クリックハンドラ: 品名入力済み。ktpAddingCostRow の状態 (呼び出し前):`, window.ktpAddingCostRow);
+
             // ボタン自体の状態で重複クリックをある程度防ぐ
             if ($button.prop('disabled') || $button.hasClass('processing')) {
-                console.log('[COST] ボタンが無効または処理中のためスキップ（クリックハンドラ冒頭）');
+                console.log(`[COST][${clickId}] ボタンが無効または処理中のためスキップ（クリックハンドラ冒頭）`);
                 return false;
             }
 
-            // グローバルフラグもチェック (addNewRowの冒頭でもチェックするが、ここでも念のため)
-            // addNewRow内で最初にチェックされるので、ここでのチェックは必須ではないが、早期リターンとして有効
+            // グローバルな処理中フラグのチェック
             if (window.ktpAddingCostRow === true) {
-                console.log('[COST] グローバルフラグがtrueのためスキップ（クリックハンドラ冒頭）');
-                // この場合、ボタンは無効化せず、ユーザーが再度試せるようにする
-                // ただし、何らかの理由でフラグが解除されない場合に備え、UI/UXの観点からは
-                // ボタンを一時的に無効化し、少し後に有効化する方が親切かもしれない。
-                // 現状は、addNewRowがフラグを管理し、このハンドラのfinallyでボタンが有効化される。
+                console.log(`[COST][${clickId}] クリックハンドラ: 既に処理中のため中止 (ktpAddingCostRow is true)`);
                 return false;
             }
 
-            // 処理中フラグとボタン状態を設定
+            // 即座にボタンを無効化し、フラグを設定
             $button.prop('disabled', true).addClass('processing');
-            console.log('[COST] +ボタンクリック処理開始、ボタンを無効化');
+            window.ktpAddingCostRow = true;
+            console.log(`[COST][${clickId}] +ボタンクリック処理開始、ボタン無効化、ktpAddingCostRow を true に設定`);
 
-            const currentRow = $(this).closest('tr');
-            let rowWasAdded;
-
+            let rowAddedSuccessfully = false;
             try {
-                rowWasAdded = addNewRow(currentRow); // addNewRow は true/false を返す
-                console.log('[COST] addNewRow からの戻り値:', rowWasAdded);
+                // addNewRowを呼び出すのは、クリックハンドラ側の品名チェックを通過した後
+                console.log(`[COST][${clickId}] addNewRow を呼び出します。`);
+                rowAddedSuccessfully = addNewRow(currentRow, clickId); 
+                console.log(`[COST][${clickId}] addNewRow の呼び出し結果:`, rowAddedSuccessfully);
+
+                if (rowAddedSuccessfully === false) {
+                    // このログは、addNewRowが品名チェックなどでfalseを返した場合に出るはず
+                    console.warn(`[COST][${clickId}] addNewRow が false を返しました。これは、addNewRow内部の品名チェックで中断されたか、または他の理由で失敗したことを意味します。この場合、行は追加されていないはずです。もし行が追加されている場合、他の要因が考えられます。`);
+                } else {
+                    console.log(`[COST][${clickId}] addNewRow が true を返しました。行が正常に追加されました。`);
+                }
             } catch (error) {
-                // 通常、addNewRow内のtry/catchで捕捉されるはずだが、念のため
-                console.error('[COST] +ボタンクリックで addNewRow 呼び出し中に予期せぬエラー:', error);
-                rowWasAdded = false; // エラー時も失敗として扱う
+                console.error(`[COST][${clickId}] addNewRow の呼び出し中またはその前後でエラーが発生:`, error);
+                rowAddedSuccessfully = false; // エラー時もfalse扱い
             } finally {
-                // addNewRow内のsetTimeout(100ms)でktpAddingCostRowがfalseになるのを待ってからボタンを有効化
-                // rowWasAdded が false の場合 (addNewRowが処理をスキップした場合も含む) でも、
-                // ボタンは一度 disabled にしたので、元に戻す必要がある。
-                setTimeout(() => {
-                    $button.prop('disabled', false).removeClass('processing');
-                    console.log('[COST] ボタン再有効化完了 (クリックハンドラ finally setTimeout)');
-                }, 200); // addNewRow内のsetTimeout(100ms) + バッファ
+                window.ktpAddingCostRow = false; // フラグを解除
+                $button.prop('disabled', false).removeClass('processing');
+                console.log(`[COST][${clickId}] ボタン再有効化完了、ktpAddingCostRow を false に設定 (finally)`);
             }
-            return false;
+            console.log(`[COST][${clickId}] クリックハンドラの末尾。`);
+            return false; // イベントのさらなる伝播を防ぐ
         });
 
         // 行削除ボタン - イベント重複を防ぐ
@@ -592,6 +618,13 @@
 
         // 商品名フィールドのblurイベントで自動保存
         $(document).on('blur', '.cost-item-input.product-name', function () {
+            if (window.ktpAddingCostRow === true) {
+                if (window.ktpDebugMode) {
+                    console.log('[COST] Product name blur event skipped due to ktpAddingCostRow flag being true.');
+                }
+                return; // Exit early
+            }
+
             const $field = $(this);
             const productName = $field.val();
             const $row = $field.closest('tr');
@@ -610,12 +643,12 @@
 
             // 新規行（ID=0 または data-newly-added=true）と既存行の両方を処理
             if (orderId) {
-                if (itemId === '0' || $row.data('newly-added')) {
-                    // 新規行の場合：まず新しいレコードを作成
-                    // 商品名が空でも、行が追加された以上は一度作成を試みる（IDを得るため）
-                    // ただし、本当に空のレコードを作りたくない場合はここで productName のチェックを入れる
-                    if (productName.trim() !== '' || $row.data('newly-added')) { // 新規追加行なら空でも一度作成
-                        createNewItem('cost', 'product_name', productName, orderId, $row, function (success, newItemId) {
+                // 変更点: itemId === '' も新規行扱いにする
+                if (itemId === '0' || itemId === '' || $row.data('newly-added')) {
+                    // 新規行の場合：新しいレコードを作成
+                    // 変更点: productName が空でなく、実際に何か入力された場合のみ createNewItem を呼び出す
+                    if (productName.trim() !== '') {
+                        createNewItem('cost', 'product_name', productName, orderId, $row, function(success, newItemId) {
                             if (success && newItemId) {
                                 itemId = newItemId; // itemIdを更新
                                 // 他のフィールドが有効化されるので、必要ならここで何かする
@@ -626,14 +659,19 @@
                                 console.warn('[COST] 商品名blur時、新規アイテム作成失敗');
                             }
                         });
+                    } else if ($row.data('newly-added') || itemId === '' || itemId === '0') { // 条件を明確化
+                        // 商品名が空のままフォーカスが外れた新規行の場合の処理（例：何もしない、またはユーザーに通知）
+                        if (window.ktpDebugMode) {
+                            console.log('Cost product name is empty on blur for new/template row. Item not created/saved.', {row: $row[0].outerHTML, itemId: itemId});
+                        }
                     }
-                } else if (itemId) {
-                    // 既存行の場合：通常の更新処理
+                } else {
+                    // 既存行の場合：商品名を自動保存 (itemId が '0'でも ''でもなく、newly-addedでもない場合)
                     autoSaveItem('cost', itemId, 'product_name', productName, orderId);
                 }
             } else {
                 if (window.ktpDebugMode) {
-                    console.log('Cost product name auto-save skipped - missing required data');
+                    console.warn('Order ID is missing. Cannot auto-save product name.');
                 }
             }
         });

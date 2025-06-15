@@ -9,7 +9,7 @@
     'use strict';
 
     // グローバルスコープに関数を定義
-    window.autoSaveItem = function (itemType, itemId, fieldName, fieldValue, orderId) {
+    window.ktpInvoiceAutoSaveItem = function (itemType, itemId, fieldName, fieldValue, orderId) {
         console.log('[INVOICE] autoSaveItem呼び出し', { itemType, itemId, fieldName, fieldValue, orderId });
         // Ajax URLの確認と代替設定
         let ajaxUrl = ajaxurl;
@@ -57,7 +57,7 @@
         });
     };
     // createNewItem関数にcallback引数を追加し、成功/失敗と新しいitem_idを返すように変更
-    window.createNewItem = function (itemType, fieldName, fieldValue, orderId, $row, callback) {
+    window.ktpInvoiceCreateNewItem = function (itemType, fieldName, fieldValue, orderId, $row, callback) {
         console.log('[INVOICE] createNewItem呼び出し', { itemType, fieldName, fieldValue, orderId, $row });
         // Ajax URLの確認と代替設定
         let ajaxUrl = ajaxurl;
@@ -130,7 +130,7 @@
                 // 新規行の場合は何もしない（商品名入力時に新規作成される）
             } else {
                 // 既存行の場合：金額を自動保存
-                window.autoSaveItem('invoice', itemId, 'amount', amount, orderId);
+                window.ktpInvoiceAutoSaveItem('invoice', itemId, 'amount', amount, orderId);
             }
         }
 
@@ -181,90 +181,88 @@
         }
     }
 
-    // 新しい行を追加（シンプルで確実な実装）
-    function addNewRow(currentRow) {
-        console.log('[INVOICE] addNewRow開始');
+    // 新しい行を追加（重複防止機能付き）
+    function addNewRow(currentRow, callId) { // callId を追加
+        console.log(`[INVOICE][${callId}] addNewRow開始 (呼び出し元ID: ${callId})`);
 
-        // 単一の確実な重複防止
-        if (window.ktpAddingRow === true) {
-            console.log('[INVOICE] 既に処理中のため中止');
-            return false;
+        // 品名チェック (addNewRow関数側でも念のため)
+        let rawProductName = currentRow.find('input.product-name').val();
+        if (typeof rawProductName !== 'string') {
+            rawProductName = currentRow.find('input[name$="[product_name]"]').val();
+        }
+        // const productName = (typeof rawProductName === 'string') ? rawProductName.trim() : '';
+        // 修正: addNewRow内の品名チェックは、呼び出し元で既に行われているため、ここではログ出力のみに留めるか、
+        // もし再度チェックするなら、その結果に基づいて早期リターンする。
+        // 今回は呼び出し元を信頼し、ここではチェックを簡略化または削除の方向で検討したが、
+        // 念のため残し、警告ログを出す。
+        const productNameValue = (typeof rawProductName === 'string') ? rawProductName.trim() : '';
+        if (productNameValue === '') {
+            // alert('品名を入力してください。(addNewRow)'); // クリックハンドラでアラートを出すので、ここでは不要
+            console.warn(`[INVOICE][${callId}] addNewRow: 品名が空の状態で呼び出されましたが、処理を続行します（本来はクリックハンドラでブロックされるべきです）。`);
+            // return false; // ここで return false すると、クリックハンドラの品名チェックが機能していない場合に二重チェックになる
+                          // ただし、現状問題が解決していないため、ここでも止めることを検討したが、まずはログで状況把握
         }
 
-        window.ktpAddingRow = true;
+        console.log(`[INVOICE][${callId}] addNewRow 本処理開始`);
+        // フラグ管理はクリックハンドラに集約
 
+        const newIndex = $('.invoice-items-table tbody tr').length;
+        const newRowHtml = `
+            <tr class="invoice-item-row" data-row-id="0" data-newly-added="true">
+                <td class="actions-column">
+                    <span class="drag-handle" title="ドラッグして並び替え">&#9776;</span>
+                    <button type="button" class="btn-add-row" title="行を追加">+</button>
+                    <button type="button" class="btn-delete-row" title="行を削除">×</button>
+                    <button type="button" class="btn-move-row" title="行を移動">></button>
+                </td>
+                <td>
+                    <input type="text" name="invoice_items[${newIndex}][product_name]" class="invoice-item-input product-name" value="">
+                    <input type="hidden" name="invoice_items[${newIndex}][id]" value="0">
+                </td>
+                <td style="text-align:left;">
+                    <input type="number" name="invoice_items[${newIndex}][price]" class="invoice-item-input price" value="0" step="1" min="0" style="text-align:left;" disabled>
+                </td>
+                <td style="text-align:left;">
+                    <input type="number" name="invoice_items[${newIndex}][quantity]" class="invoice-item-input quantity" value="0" step="1" min="0" style="text-align:left;" disabled>
+                </td>
+                <td>
+                    <input type="text" name="invoice_items[${newIndex}][unit]" class="invoice-item-input unit" value="式" disabled>
+                </td>
+                <td style="text-align:left;">
+                    <input type="number" name="invoice_items[${newIndex}][amount]" class="invoice-item-input amount" value="" step="1" readonly style="text-align:left;">
+                </td>
+                <td>
+                    <input type="text" name="invoice_items[${newIndex}][remarks]" class="invoice-item-input remarks" value="" disabled>
+                    <input type="hidden" name="invoice_items[${newIndex}][sort_order]" value="${newIndex + 1}">
+                </td>
+            </tr>
+        `;
+
+        let success = false;
         try {
-            const table = currentRow.closest('table');
-            const tbody = table.find('tbody');
-
-            // 新しいインデックスを取得
-            let maxIndex = -1;
-            tbody.find('input[name*="invoice_items["]').each(function () {
-                const name = $(this).attr('name');
-                const match = name.match(/invoice_items\[(\d+)\]/);
-                if (match) {
-                    const index = parseInt(match[1], 10);
-                    if (index > maxIndex) {
-                        maxIndex = index;
-                    }
-                }
-            });
-            const newIndex = maxIndex + 1;
-
-            console.log('[INVOICE] 新しいインデックス:', newIndex);
-
-            // 新しい行のHTMLを生成
-            const newRowHtml = `
-                <tr class="invoice-item-row" data-row-id="0" data-newly-added="true">
-                    <td class="actions-column">
-                        <span class="drag-handle" title="ドラッグして並び替え">&#9776;</span>
-                        <button type="button" class="btn-add-row" title="行を追加">+</button>
-                        <button type="button" class="btn-delete-row" title="行を削除">×</button>
-                        <button type="button" class="btn-move-row" title="行を移動">></button>
-                    </td>
-                    <td>
-                        <input type="text" name="invoice_items[${newIndex}][product_name]" value="" class="invoice-item-input product-name" />
-                        <input type="hidden" name="invoice_items[${newIndex}][id]" value="0" />
-                    </td>
-                    <td style="text-align:left;">
-                        <input type="number" name="invoice_items[${newIndex}][price]" value="0" class="invoice-item-input price" step="1" min="0" style="text-align:left;" disabled />
-                    </td>
-                    <td style="text-align:left;">
-                        <input type="number" name="invoice_items[${newIndex}][quantity]" value="1" class="invoice-item-input quantity" step="1" min="0" style="text-align:left;" disabled />
-                    </td>
-                    <td>
-                        <input type="text" name="invoice_items[${newIndex}][unit]" value="式" class="invoice-item-input unit" disabled />
-                    </td>
-                    <td style="text-align:left;">
-                        <input type="number" name="invoice_items[${newIndex}][amount]" value="0" class="invoice-item-input amount" step="1" readonly style="text-align:left;" />
-                    </td>
-                    <td>
-                        <input type="text" name="invoice_items[${newIndex}][remarks]" value="" class="invoice-item-input remarks" disabled />
-                    </td>
-                </tr>
-            `;
-
-            // 行を追加
+            console.log(`[INVOICE][${callId}] currentRow.after(newRowHtml) を実行する直前。`);
             currentRow.after(newRowHtml);
-            const $newRow = currentRow.next(); // 新しく追加された行を取得
-            $newRow.data('pending-initial-creation', true); // 初期作成ペンディングフラグを設定
-            console.log('[INVOICE] 新しい行が追加されました - インデックス:', newIndex, 'pending-initial-creation:', $newRow.data('pending-initial-creation'));
-
-            // 新しく追加された行の product_name にフォーカス
-            $newRow.find('.product-name').focus();
-
-            return true;
-
+            const $newRow = currentRow.next();
+            if ($newRow && $newRow.length > 0 && $newRow.hasClass('invoice-item-row')) {
+                console.log(`[INVOICE][${callId}] 新しい行がDOMに追加されました。`);
+                
+                // 新しい行で金額の自動計算を実行
+                calculateAmount($newRow);
+                
+                $newRow.find('.product-name').focus();
+                success = true;
+            } else {
+                console.error(`[INVOICE][${callId}] 新しい行の追加に失敗したか、見つかりませんでした。`);
+                success = false;
+            }
         } catch (error) {
-            console.error('[INVOICE] addNewRow エラー:', error);
-            return false;
+            console.error(`[INVOICE][${callId}] addNewRow エラー:`, error);
+            success = false;
         } finally {
-            // フラグをクリア
-            setTimeout(() => {
-                window.ktpAddingRow = false;
-                console.log('[INVOICE] フラグクリア完了');
-            }, 100);
+            // window.ktpAddingInvoiceRow = false; // フラグ解除は呼び出し元の finally で
+            console.log(`[INVOICE][${callId}] addNewRow終了`);
         }
+        return success;
     }
 
     // 行を削除
@@ -464,42 +462,79 @@
         //     }
         // });
 
-        // [+]ボタンで行追加（シンプルで確実な実装）
-        $(document).off('click.ktpInvoiceAdd', '.invoice-items-table .btn-add-row')
-            .on('click.ktpInvoiceAdd', '.invoice-items-table .btn-add-row', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
+        // [+]ボタンで行追加
+        // 既存のハンドラを解除してから登録
+        $(document).off('click.ktpInvoiceAdd', '.invoice-items-table .btn-add-row');
+        $('body').off('click.ktpInvoiceAdd', '.invoice-items-table .btn-add-row');
+        $('.invoice-items-table').off('click.ktpInvoiceAdd', '.btn-add-row');
 
-                const $button = $(this);
-                const currentRow = $button.closest('tr');
+        // より強力な解除（名前空間なしも試す）
+        $(document).off('click', '.invoice-items-table .btn-add-row');
+        $('body').off('click', '.invoice-items-table .btn-add-row');
+        $('.invoice-items-table').off('click', '.btn-add-row');
 
-                // ボタンの無効化で重複防止
-                if ($button.prop('disabled') || $button.hasClass('processing')) {
-                    console.log('[INVOICE] ボタン処理中のためスキップ');
-                    return false;
-                }
 
-                // 即座にボタンを無効化
-                $button.prop('disabled', true).addClass('processing');
+        $(document).on('click.ktpInvoiceAdd', '.invoice-items-table .btn-add-row', function (e) {
+            const clickId = Date.now();
+            console.log(`[INVOICE][${clickId}] +ボタンクリックイベント発生 (ktpInvoiceAdd)`);
 
-                console.log('[INVOICE] +ボタンクリック処理開始');
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
 
-                try {
-                    const result = addNewRow(currentRow);
-                    console.log('[INVOICE] addNewRow結果:', result);
-                } catch (error) {
-                    console.error('[INVOICE] ボタンクリックエラー:', error);
-                } finally {
-                    // ボタンを再有効化
-                    setTimeout(() => {
-                        $button.prop('disabled', false).removeClass('processing');
-                        console.log('[INVOICE] ボタン再有効化完了');
-                    }, 300);
-                }
+            const $button = $(this);
+            const currentRow = $button.closest('tr');
 
+            let rawProductNameCH = currentRow.find('input.product-name').val();
+            if (typeof rawProductNameCH !== 'string') {
+                rawProductNameCH = currentRow.find('input[name$="[product_name]"]').val();
+            }
+            const productNameValueCH = (typeof rawProductNameCH === 'string') ? rawProductNameCH.trim() : '';
+
+            if (productNameValueCH === '') {
+                alert('品名を入力してください。');
+                console.log(`[INVOICE][${clickId}] クリックハンドラ: 品名未入力。 addNewRow を呼び出さずに処理を中断します。これがこのハンドラの最後のログになるはずです。`);
                 return false;
-            });
+            }
+
+            console.log(`[INVOICE][${clickId}] クリックハンドラ: 品名入力済み。ktpAddingInvoiceRow の状態 (呼び出し前):`, window.ktpAddingInvoiceRow);
+
+            if ($button.prop('disabled') || $button.hasClass('processing')) {
+                console.log(`[INVOICE][${clickId}] ボタンが無効または処理中のためスキップ`);
+                return false;
+            }
+
+            if (window.ktpAddingInvoiceRow === true) {
+                console.log(`[INVOICE][${clickId}] 既に処理中のため中止 (ktpAddingInvoiceRow is true)`);
+                return false;
+            }
+
+            $button.prop('disabled', true).addClass('processing');
+            window.ktpAddingInvoiceRow = true;
+            console.log(`[INVOICE][${clickId}] +ボタン処理開始、ボタン無効化、ktpAddingInvoiceRow を true に設定`);
+
+            let rowAddedSuccessfully = false;
+            try {
+                console.log(`[INVOICE][${clickId}] addNewRow を呼び出します。`);
+                rowAddedSuccessfully = addNewRow(currentRow, clickId); // clickId を渡す
+                console.log(`[INVOICE][${clickId}] addNewRow の呼び出し結果:`, rowAddedSuccessfully);
+
+                if (!rowAddedSuccessfully) {
+                    console.warn(`[INVOICE][${clickId}] addNewRow が false を返しました。`);
+                } else {
+                    console.log(`[INVOICE][${clickId}] addNewRow が true を返しました。`);
+                }
+            } catch (error) {
+                console.error(`[INVOICE][${clickId}] addNewRow 呼び出し中またはその前後でエラー:`, error);
+                rowAddedSuccessfully = false;
+            } finally {
+                window.ktpAddingInvoiceRow = false;
+                $button.prop('disabled', false).removeClass('processing');
+                console.log(`[INVOICE][${clickId}] ボタン再有効化、ktpAddingInvoiceRow を false に設定 (finally)`);
+            }
+            console.log(`[INVOICE][${clickId}] クリックハンドラの末尾。`);
+            return false;
+        });
 
         // 行削除ボタン - イベント重複を防ぐ
         $(document).off('click.ktpInvoiceDelete', '.invoice-items-table .btn-delete-row') // 名前空間付きイベントに変更
@@ -531,46 +566,61 @@
             $(this).removeClass('focused');
         });
 
-        // サービスフィールドのblurイベントで自動保存
+        // 商品名フィールドのblurイベントで自動保存
         $(document).on('blur', '.invoice-item-input.product-name', function () {
             const $field = $(this);
             const productName = $field.val();
             const $row = $field.closest('tr');
-            const itemId = $row.find('input[name*="[id]"]').val();
+            let itemId = $row.find('input[name*="[id]"]').val();
             const orderId = $('input[name="order_id"]').val() || $('#order_id').val();
-            console.log('[INVOICE] blur: product-name', { productName, itemId, orderId });
-            // 新規行（ID=0）の場合は新規作成、既存行は更新
-            if (productName.trim() !== '' && orderId) {
-                if (itemId === '0' && $row.data('pending-initial-creation') && !$row.data('creating-item')) {
-                    console.log('[INVOICE] blur: 新規作成 product-name', { productName, orderId });
-                    $row.data('creating-item', true); // 作成中フラグをセット
-                    window.createNewItem('invoice', 'product_name', productName, orderId, $row, function (success, newItemId) {
-                        if (success && newItemId) {
-                            $row.data('pending-initial-creation', false); // ペンディングフラグを解除
-                            // IDはcreateNewItem内で既に設定されているはずだが、念のため再確認
-                            if ($row.find('input[name*="[id]"]').val() !== newItemId) {
+
+            if (window.ktpDebugMode) {
+                console.log('Invoice product name auto-save debug:', {
+                    productName: productName,
+                    itemId: itemId,
+                    orderId: orderId,
+                    hasNonce: typeof ktp_ajax_nonce !== 'undefined',
+                    hasAjaxurl: typeof ajaxurl !== 'undefined'
+                });
+            }
+
+            if (orderId) {
+                // 変更点: itemId === '' も新規行扱いにする
+                if (itemId === '0' || itemId === '' || $row.data('newly-added')) {
+                    // 新規行の場合：新しいレコードを作成
+                    // 変更点: productName が空でなく、実際に何か入力された場合のみ createNewItem を呼び出す
+                    if (productName.trim() !== '') {
+                        window.ktpInvoiceCreateNewItem('invoice', 'product_name', productName, orderId, $row, function(success, newItemId) {
+                            if (success && newItemId) {
                                 $row.find('input[name*="[id]"]').val(newItemId);
+                                $row.data('pending-initial-creation', false); // フラグを解除
+                                // 他のフィールドがまだ無効なら有効化 (createNewItemのコールバックで処理されるはずだが念のため)
+                                if ($row.find('.price').prop('disabled')) {
+                                    $row.find('.invoice-item-input').not('.product-name').not('.amount').prop('disabled', false);
+                                    console.log('[INVOICE] product-name blur: 他のフィールドを有効化（再確認）', $row);
+                                }
+                                // price フィールドにフォーカスを移動
+                                if ($row.find('.price').prop('disabled') === false) {
+                                    $row.find('.price').focus();
+                                }
+                                console.log('[INVOICE] product-name blur: createNewItem成功後、ID:', newItemId, 'pending-initial-creation:', $row.data('pending-initial-creation'));
+                            } else {
+                                console.warn('[INVOICE] product-name blur: createNewItem失敗');
                             }
-                            // 他のフィールドがまだ無効なら有効化 (createNewItemのコールバックで処理されるはずだが念のため)
-                            if ($row.find('.price').prop('disabled')) {
-                                $row.find('.invoice-item-input').not('.product-name').not('.amount').prop('disabled', false);
-                                console.log('[INVOICE] product-name blur: 他のフィールドを有効化（再確認）', $row);
-                            }
-                            // price フィールドにフォーカスを移動
-                            if ($row.find('.price').prop('disabled') === false) {
-                                $row.find('.price').focus();
-                            }
-                            console.log('[INVOICE] product-name blur: createNewItem成功後、ID:', newItemId, 'pending-initial-creation:', $row.data('pending-initial-creation'));
-                        } else {
-                            console.warn('[INVOICE] product-name blur: createNewItem失敗');
+                        });
+                    } else if ($row.data('newly-added') || itemId === '' || itemId === '0') { // 条件を明確化
+                        // 商品名が空のままフォーカスが外れた新規行の場合の処理
+                        if (window.ktpDebugMode) {
+                            console.log('Invoice product name is empty on blur for new/template row. Item not created/saved.', {row: $row[0].outerHTML, itemId: itemId});
                         }
-                        $row.data('creating-item', false); // 作成中フラグを解除
-                    });
-                } else if (itemId && itemId !== '0') {
-                    console.log('[INVOICE] blur: 既存更新 product-name', { productName, itemId, orderId });
-                    window.autoSaveItem('invoice', itemId, 'product_name', productName, orderId);
-                } else if ($row.data('creating-item')) {
-                    console.log('[INVOICE] blur: product-name - 現在アイテム作成処理中のためスキップ');
+                    }
+                } else {
+                    // 既存行の場合：商品名を自動保存
+                    window.ktpInvoiceAutoSaveItem('invoice', itemId, 'product_name', productName, orderId);
+                }
+            } else {
+                if (window.ktpDebugMode) {
+                    console.warn('Order ID is missing. Cannot auto-save product name.');
                 }
             }
         });
@@ -586,7 +636,7 @@
             // item_idが0でなく、かつ空でない場合に保存
             if (orderId && itemId && itemId !== '0') {
                 console.log('[INVOICE] blur: price - 既存更新/新規作成後', { price, itemId, orderId });
-                window.autoSaveItem('invoice', itemId, 'price', price, orderId);
+                window.ktpInvoiceAutoSaveItem('invoice', itemId, 'price', price, orderId);
             } else if (itemId === '0') {
                 console.log('[INVOICE] blur: price - item_idが0のため保存スキップ。product_nameの入力/保存待ち。');
             }
@@ -602,7 +652,7 @@
             calculateAmount($row);
             if (orderId && itemId && itemId !== '0') {
                 console.log('[INVOICE] blur: quantity - 既存更新/新規作成後', { quantity, itemId, orderId });
-                window.autoSaveItem('invoice', itemId, 'quantity', quantity, orderId);
+                window.ktpInvoiceAutoSaveItem('invoice', itemId, 'quantity', quantity, orderId);
             } else if (itemId === '0') {
                 console.log('[INVOICE] blur: quantity - item_idが0のため保存スキップ。product_nameの入力/保存待ち。');
             }
@@ -616,7 +666,7 @@
             const orderId = $('input[name="order_id"]').val() || $('#order_id').val();
             if (orderId && itemId && itemId !== '0') {
                 console.log('[INVOICE] blur: remarks - 既存更新/新規作成後', { remarks, itemId, orderId });
-                window.autoSaveItem('invoice', itemId, 'remarks', remarks, orderId);
+                window.ktpInvoiceAutoSaveItem('invoice', itemId, 'remarks', remarks, orderId);
             } else if (itemId === '0') {
                 console.log('[INVOICE] blur: remarks - item_idが0のため保存スキップ。product_nameの入力/保存待ち。');
             }
@@ -630,7 +680,7 @@
             const orderId = $('input[name="order_id"]').val() || $('#order_id').val();
             if (orderId && itemId && itemId !== '0') {
                 console.log('[INVOICE] blur: unit - 既存更新/新規作成後', { unit, itemId, orderId });
-                window.autoSaveItem('invoice', itemId, 'unit', unit, orderId);
+                window.ktpInvoiceAutoSaveItem('invoice', itemId, 'unit', unit, orderId);
             } else if (itemId === '0') {
                 console.log('[INVOICE] blur: unit - item_idが0のため保存スキップ。product_nameの入力/保存待ち。');
             }
@@ -795,7 +845,7 @@
             const $nameInput = $(this).find('input[name*="[product_name]"]');
             if ($nameInput.length > 0) {
                 const name = $nameInput.attr('name');
-                const match = name.match(/invoice_items\[(\d+)\]/);
+                const match = name.match(/invoice_items\\[(\d+)\\]/);
                 if (match) {
                     const index = parseInt(match[1], 10);
                     if (indexes.includes(index)) {

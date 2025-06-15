@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     // =============================
-    // 行追加・削除ボタンのイベント委譲（常に動作するように）
+    // 古いグローバル行追加・削除機能は無効化
+    // 専用のハンドラ（ktp-invoice-items.js、ktp-cost-items.js）を使用
     // =============================
-    // 請求書テーブル
+    // 注意: 以下のコードは無効化されています。
+    // 請求項目・コスト項目は専用のJavaScriptファイルで処理されます。
+    /*
     document.body.addEventListener('click', function(e) {
         // 行追加
         if (e.target && e.target.classList.contains('btn-add-row')) {
@@ -46,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
         }
     });
+    */
     console.log('KTPWP: DOM loaded, initializing toggle functionality');
 
     // HTMLエスケープ関数

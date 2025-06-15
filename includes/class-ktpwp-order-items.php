@@ -366,34 +366,59 @@ class KTPWP_Order_Items {
         try {
             $sort_order = 1;
             $submitted_ids = array();
+            // Keep track of existing items that were submitted, even if their product_name became empty
+            $existing_submitted_ids = array();
+
             foreach ( $items as $item ) {
                 // Sanitize input data
                 $item_id = isset( $item['id'] ) ? intval( $item['id'] ) : 0;
                 $product_name = isset( $item['product_name'] ) ? sanitize_text_field( $item['product_name'] ) : '';
                 $price = isset( $item['price'] ) ? floatval( $item['price'] ) : 0;
-                $unit = isset( $item['unit'] ) ? sanitize_text_field( $item['unit'] ) : '';
                 $quantity = isset( $item['quantity'] ) ? floatval( $item['quantity'] ) : 0;
-                $amount = isset( $item['amount'] ) ? floatval( $item['amount'] ) : 0;
-                $remarks = isset( $item['remarks'] ) ? sanitize_textarea_field( $item['remarks'] ) : '';
+                $unit = isset( $item['unit'] ) ? sanitize_text_field( $item['unit'] ) : '';
+                $amount = isset( $item['amount'] ) ? floatval( $item['amount'] ) : $price * $quantity; // Recalculate if not provided
+                $remarks = isset( $item['remarks'] ) ? sanitize_text_field( $item['remarks'] ) : '';
+                $is_provisional = isset( $item['is_provisional'] ) ? rest_sanitize_boolean( $item['is_provisional'] ) : 0;
 
-                // 商品名が空ならスキップ（商品名があれば必ず保存）
-                if ( empty( $product_name ) ) {
+
+                if ( $item_id > 0 ) {
+                    // This is an existing item. Add its ID to existing_submitted_ids
+                    // so it won't be deleted by the cleanup logic later,
+                    // even if product_name is now empty (it will be updated with an empty name).
+                    $existing_submitted_ids[] = $item_id;
+                }
+
+                // 商品名が空で、かつ新規行(id=0)の場合は、まだ保存対象としないのでスキップ
+                if ( empty( $product_name ) && $item_id === 0 ) {
                     continue;
                 }
+                // 商品名が空でも既存行(id>0)の場合は、product_nameを空で更新するために処理を続ける
 
                 $data = array(
                     'order_id' => $order_id,
                     'product_name' => $product_name,
                     'price' => $price,
-                    'unit' => $unit,
                     'quantity' => $quantity,
+                    'unit' => $unit,
                     'amount' => $amount,
                     'remarks' => $remarks,
+                    'is_provisional' => $is_provisional,
                     'sort_order' => $sort_order,
                     'updated_at' => current_time( 'mysql' )
                 );
 
-                $format = array( '%d', '%s', '%f', '%s', '%f', '%f', '%s', '%d', '%s' );
+                $format = array(
+                    '%d', // order_id
+                    '%s', // product_name
+                    '%f', // price
+                    '%f', // quantity
+                    '%s', // unit
+                    '%f', // amount
+                    '%s', // remarks
+                    '%d', // is_provisional
+                    '%d', // sort_order
+                    '%s'  // updated_at
+                );
 
                 $used_id = 0;
                 if ( $item_id > 0 ) {
@@ -407,12 +432,12 @@ class KTPWP_Order_Items {
                     );
                     $used_id = $item_id;
                 } else {
-                    // Insert new item
+                    // Insert new item (only if product_name is not empty, or if it's an existing item being cleared)
                     $data['created_at'] = current_time( 'mysql' );
-                    $format[] = '%s';
+                    $format[] = '%s'; // created_at
                     $result = $wpdb->insert( $table_name, $data, $format );
                     if ($result === false) {
-                        error_log('KTPWP Error: Invoice item INSERT failed: ' . $wpdb->last_error);
+                        error_log('KTPWP Error: Item INSERT failed in save_invoice_items: ' . $wpdb->last_error . ' Data: ' . print_r($data, true));
                     }
                     $used_id = $wpdb->insert_id;
                 }
@@ -424,21 +449,28 @@ class KTPWP_Order_Items {
                 if ($used_id > 0) {
                     $submitted_ids[] = $used_id;
                 }
-
                 $sort_order++;
             }
 
-            // Remove any items that weren't in the submitted data
-            if ( ! empty( $submitted_ids ) ) {
-                $ids_placeholder = implode( ',', array_fill( 0, count( $submitted_ids ), '%d' ) );
+            // Merge $submitted_ids (actually processed) and $existing_submitted_ids (all submitted existing items)
+            // to ensure no existing submitted item gets deleted.
+            $final_ids_to_keep = array_unique( array_merge( $submitted_ids, $existing_submitted_ids ) );
+
+            // Remove any items that weren't in the submitted data for this order_id
+            if ( ! empty( $final_ids_to_keep ) ) {
+                $ids_placeholder = implode( ',', array_fill( 0, count( $final_ids_to_keep ), '%d' ) );
                 $delete_query = $wpdb->prepare(
                     "DELETE FROM `{$table_name}` WHERE order_id = %d AND id NOT IN ({$ids_placeholder})",
-                    array_merge( array( $order_id ), $submitted_ids )
+                    array_merge( array( $order_id ), $final_ids_to_keep )
                 );
                 $wpdb->query( $delete_query );
             } else {
-                // Delete all items if no valid items were submitted
-                $wpdb->delete( $table_name, array( 'order_id' => $order_id ), array( '%d' ) );
+                // Delete all items for this order_id ONLY IF the initial $items array was empty.
+                // This prevents deleting all items if $items contained only new rows with empty product_names
+                // which were then skipped.
+                if (empty($items)) {
+                    $wpdb->delete( $table_name, array( 'order_id' => $order_id ), array( '%d' ) );
+                }
             }
 
             // Commit transaction
@@ -475,14 +507,17 @@ class KTPWP_Order_Items {
         try {
             $sort_order = 1;
             $submitted_ids = array();
+            // Keep track of existing items that were submitted, even if their product_name became empty
+            $existing_submitted_ids = array();
+
             foreach ( $items as $item ) {
                 // Sanitize input data
                 $item_id = isset( $item['id'] ) ? intval( $item['id'] ) : 0;
                 $product_name = isset( $item['product_name'] ) ? sanitize_text_field( $item['product_name'] ) : '';
                 $price = isset( $item['price'] ) ? floatval( $item['price'] ) : 0;
-                $unit = isset( $item['unit'] ) ? sanitize_text_field( $item['unit'] ) : '';
                 $quantity = isset( $item['quantity'] ) ? floatval( $item['quantity'] ) : 0;
-                $amount = isset( $item['amount'] ) ? floatval( $item['amount'] ) : 0;
+                $unit = isset( $item['unit'] ) ? sanitize_text_field( $item['unit'] ) : '';
+                $amount = isset( $item['amount'] ) ? floatval( $item['amount'] ) : $price * $quantity; // Recalculate if not provided
                 $remarks = isset( $item['remarks'] ) ? sanitize_textarea_field( $item['remarks'] ) : '';
 
                 // 商品名が空ならスキップ（商品名があれば必ず保存）
@@ -537,17 +572,25 @@ class KTPWP_Order_Items {
                 $sort_order++;
             }
 
-            // Remove any items that weren't in the submitted data
-            if ( ! empty( $submitted_ids ) ) {
-                $ids_placeholder = implode( ',', array_fill( 0, count( $submitted_ids ), '%d' ) );
+            // Merge $submitted_ids (actually processed) and $existing_submitted_ids (all submitted existing items)
+            // to ensure no existing submitted item gets deleted.
+            $final_ids_to_keep = array_unique( array_merge( $submitted_ids, $existing_submitted_ids ) );
+
+            // Remove any items that weren't in the submitted data for this order_id
+            if ( ! empty( $final_ids_to_keep ) ) {
+                $ids_placeholder = implode( ',', array_fill( 0, count( $final_ids_to_keep ), '%d' ) );
                 $delete_query = $wpdb->prepare(
                     "DELETE FROM `{$table_name}` WHERE order_id = %d AND id NOT IN ({$ids_placeholder})",
-                    array_merge( array( $order_id ), $submitted_ids )
+                    array_merge( array( $order_id ), $final_ids_to_keep )
                 );
                 $wpdb->query( $delete_query );
             } else {
-                // Delete all items if no valid items were submitted
-                $wpdb->delete( $table_name, array( 'order_id' => $order_id ), array( '%d' ) );
+                // Delete all items for this order_id ONLY IF the initial $items array was empty.
+                // This prevents deleting all items if $items contained only new rows with empty product_names
+                // which were then skipped.
+                if (empty($items)) {
+                    $wpdb->delete( $table_name, array( 'order_id' => $order_id ), array( '%d' ) );
+                }
             }
 
             // Commit transaction
