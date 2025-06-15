@@ -147,48 +147,40 @@ class Kntan_Service_Class {
             }
         }
 
-        // GETパラメータからメッセージを取得して表示
+        // GETパラメータからのメッセージをフローティングアラート（JS通知）で表示（他タブと統一・安全な出力）
         if (isset($_GET['message'])) {
-            $message_type = sanitize_text_field($_GET['message']);
-            $message_text = '';
-            $notice_class = '';
-
-            // ソート操作時はメッセージを表示しないようにする
-            $is_sorting_action = isset($_GET['sort_by']) || isset($_GET['sort_order']);
-
-            if ($message_type === 'updated' && !$is_sorting_action) {
-                $message_text = esc_html__('更新しました。', 'ktpwp');
-                $notice_class = 'notice-success is-dismissible';
-            } elseif ($message_type === 'added') {
-                $message_text = esc_html__('新しいサービスを追加しました。', 'ktpwp');
-                $notice_class = 'notice-success is-dismissible';
-            } elseif ($message_type === 'deleted') {
-                $message_text = esc_html__('削除しました。', 'ktpwp');
-                $notice_class = 'notice-success is-dismissible';
-            } elseif ($message_type === 'duplicated') {
-                $message_text = esc_html__('複製しました。', 'ktpwp');
-                $notice_class = 'notice-success is-dismissible';
-            } elseif ($message_type === 'search_cancelled') {
-                $message_text = esc_html__('検索をキャンセルしました。', 'ktpwp');
-                $notice_class = 'notice-info is-dismissible';
-            }
-            // 他のメッセージタイプも必要に応じて追加
-
-            if (!empty($message_text) && !empty($notice_class)) {
-                echo '<div class="notice ' . esc_attr($notice_class) . '"><p>' . $message_text . '</p></div>';
-                // JavaScript を追加して、表示後にURLから 'message' パラメータを削除 (DOMContentLoaded内で実行)
-                echo '<script type="text/javascript">' .
-                     'document.addEventListener("DOMContentLoaded", function() {' .
-                     '  if (window.history.replaceState) {' .
-                     '    const currentUrl = new URL(window.location.href);' .
-                     '    if (currentUrl.searchParams.has(\'message\')) {' .
-                     '      currentUrl.searchParams.delete(\'message\');' .
-                     '      window.history.replaceState({ path: currentUrl.href }, \'\', currentUrl.href);' .
-                     '    }' .
-                     '  }' .
-                     '});' .
-                     '</script>';
-            }
+            ?>
+            <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var messageType = "<?php echo esc_js($_GET['message']); ?>";
+                switch (messageType) {
+                    case "updated":
+                        if (typeof showSuccessNotification === 'function') showSuccessNotification("<?php echo esc_js(__('更新しました。', 'ktpwp')); ?>");
+                        break;
+                    case "added":
+                        if (typeof showSuccessNotification === 'function') showSuccessNotification("<?php echo esc_js(__('新しいサービスを追加しました。', 'ktpwp')); ?>");
+                        break;
+                    case "deleted":
+                        if (typeof showSuccessNotification === 'function') showSuccessNotification("<?php echo esc_js(__('削除しました。', 'ktpwp')); ?>");
+                        break;
+                    case "duplicated":
+                        if (typeof showSuccessNotification === 'function') showSuccessNotification("<?php echo esc_js(__('複製しました。', 'ktpwp')); ?>");
+                        break;
+                    case "search_cancelled":
+                        if (typeof showInfoNotification === 'function') showInfoNotification("<?php echo esc_js(__('検索をキャンセルしました。', 'ktpwp')); ?>");
+                        break;
+                }
+                // URLからmessageパラメータを削除
+                if (window.history.replaceState) {
+                    var currentUrl = new URL(window.location.href);
+                    if (currentUrl.searchParams.has("message")) {
+                        currentUrl.searchParams.delete("message");
+                        window.history.replaceState({ path: currentUrl.href }, "", currentUrl.href);
+                    }
+                }
+            });
+            </script>
+            <?php
         }
 
         // セッション変数をチェックしてメッセージを表示 (これは前の修正の名残なので、GETパラメータ方式に統一した場合は削除またはコメントアウトを検討)
@@ -220,36 +212,8 @@ class Kntan_Service_Class {
             $search_message = isset($_SESSION['ktp_service_search_message']) ? $_SESSION['ktp_service_search_message'] : '';
         }
 
-        // 成功メッセージの表示
+        // JS通知は他タブと統一のため廃止（noticeのみ）
         $message = '';
-        // JavaScript-based notifications instead of static HTML
-        if (isset($_GET['message'])) {
-            echo '<script>
-            document.addEventListener("DOMContentLoaded", function() {
-                const messageType = "' . esc_js($_GET['message']) . '";
-                switch (messageType) {
-                    case "updated":
-                        showSuccessNotification("' . esc_js(__('更新しました。', 'ktpwp')) . '");
-                        break;
-                    case "added":
-                        showSuccessNotification("' . esc_js(__('新しいサービスを追加しました。', 'ktpwp')) . '");
-                        break;
-                    case "deleted":
-                        showSuccessNotification("' . esc_js(__('削除しました。', 'ktpwp')) . '");
-                        break;
-                    case "duplicated":
-                        showSuccessNotification("' . esc_js(__('複製しました。', 'ktpwp')) . '");
-                        break;
-                    case "search_found":
-                        showInfoNotification("' . esc_js(__('検索結果を表示しています。', 'ktpwp')) . '");
-                        break;
-                    case "search_cancelled":
-                        showInfoNotification("' . esc_js(__('検索をキャンセルしました。', 'ktpwp')) . '");
-                        break;
-                }
-            });
-            </script>';
-        }
 
         // 検索メッセージの表示
         if ($search_mode && $search_message) {
