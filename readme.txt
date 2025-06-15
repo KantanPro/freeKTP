@@ -3,7 +3,7 @@ Contributors: kantanpro
 Tags: workflow, order management, business, client, service, supplier, invoice, report
 Requires at least: 5.0
 Tested up to: 6.5
-Stable tag: 1.0.0
+Stable tag: 1.0.7 (beta)
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -186,8 +186,12 @@ A: 仕入先には税区分の設定があり、適切な税計算が行われ�
 
 == 変更履歴 ==
 
+= 1.0.7 (beta) =
+* ベータ版リリース
+* UI/UXを改善しました。
+
 = 1.0.0 =
-* 正式リリース版
+* ベータ版リリース
 * プラグインリファレンス機能の実装
 * リファレンスモーダルとAJAXコンテンツ読み込み機能
 * 包括的なセキュリティ対策の実装
@@ -208,8 +212,12 @@ A: 仕入先には税区分の設定があり、適切な税計算が行われ�
 
 == アップグレード通知 ==
 
+= 1.0.7 (beta) =
+* ベータ版リリース
+* UI/UXを改善しました。
+
 = 1.0.0 =
-* 正式リリース版
+* ベータ版リリース
 * プラグインリファレンス機能が追加されました
 * セキュリティとパフォーマンスが大幅に向上
 * 全機能が本番環境で安定稼働
@@ -224,7 +232,7 @@ A: 仕入先には税区分の設定があり、適切な税計算が行われ�
 
 プラグインに関するお問い合わせやサポートは、以下までご連絡ください：
 
-* **公式サイト**: https://www.kantan-pro.com/
+* **公式サイト**: https://www.kantanpro.com/
 
 == システム要件 ==
 * WordPress 5.0 以上
