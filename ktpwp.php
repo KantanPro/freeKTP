@@ -3,7 +3,7 @@
  * Plugin Name: KantanPro
  * Plugin URI: https://www.kantanpro.com/
  * Description: あなたのビジネスのハブとなるシステムです。ショートコード[ktpwp_all_tab]を固定ページに設置してください。
- * Version: 1.2.2(beta)
+ * Version: 1.2.3(beta)
  * Author: KantanPro
  * Author URI: https://www.kantanpro.com/developer-profile/
  * License: GPL v2 or later
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // プラグイン定数定義
 if ( ! defined( 'KANTANPRO_PLUGIN_VERSION' ) ) {
-    define( 'KANTANPRO_PLUGIN_VERSION', '1.2.2(beta)' );
+    define( 'KANTANPRO_PLUGIN_VERSION', '1.2.3(beta)' );
 }
 if ( ! defined( 'KANTANPRO_PLUGIN_NAME' ) ) {
     define( 'KANTANPRO_PLUGIN_NAME', 'KantanPro' );
@@ -133,6 +133,7 @@ function ktpwp_autoload_classes() {
         // クライアント管理の新クラス
         'KTPWP_Client_DB'       => 'includes/class-ktpwp-client-db.php',
         'KTPWP_Client_UI'       => 'includes/class-ktpwp-client-ui.php',
+        'KTPWP_Migration'       => 'includes/class-ktpwp-migration.php',
     );
 
     foreach ( $classes as $class_name => $file_path ) {
@@ -590,6 +591,7 @@ function ktp_table_setup() {
 register_activation_hook(KANTANPRO_PLUGIN_FILE, 'ktp_table_setup'); // テーブル作成処理
 register_activation_hook(KANTANPRO_PLUGIN_FILE, array('KTP_Settings', 'activate')); // 設定クラスのアクティベート処理
 register_activation_hook(KANTANPRO_PLUGIN_FILE, array('KTPWP_Plugin_Reference', 'on_plugin_activation')); // プラグインリファレンス更新処理
+register_activation_hook(KANTANPRO_PLUGIN_FILE, 'ktpwp_run_migration_on_activation'); // マイグレーション実行処理
 
 // プラグインアップデート時の処理
 add_action('upgrader_process_complete', function($upgrader_object, $options) {
@@ -601,12 +603,36 @@ add_action('upgrader_process_complete', function($upgrader_object, $options) {
                     if (class_exists('KTPWP_Plugin_Reference')) {
                         KTPWP_Plugin_Reference::clear_all_cache();
                     }
+                    // マイグレーションを実行
+                    ktpwp_run_migration_on_update();
                     break;
                 }
             }
         }
     }
 }, 10, 2);
+
+/**
+ * プラグインアクティベーション時のマイグレーション実行
+ */
+function ktpwp_run_migration_on_activation() {
+    // マイグレーションクラスが利用可能かチェック
+    if (class_exists('KTPWP_Migration')) {
+        $migration = KTPWP_Migration::get_instance();
+        $migration->run_auto_migration('activation');
+    }
+}
+
+/**
+ * プラグインアップデート時のマイグレーション実行
+ */
+function ktpwp_run_migration_on_update() {
+    // マイグレーションクラスが利用可能かチェック
+    if (class_exists('KTPWP_Migration')) {
+        $migration = KTPWP_Migration::get_instance();
+        $migration->run_auto_migration('update');
+    }
+}
 
 function check_activation_key() {
     $activation_key = get_site_option('ktp_activation_key');
