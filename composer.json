@@ -1,5 +1,10 @@
 {
-  "name": "your-name/your-plugin",
+  "name": "kantan-pro/kantan-pro",
+  "description": "KantanPro Plugin for WordPress.",
+  "type": "wordpress-plugin",
+  "require": {
+    "yahnis-elsts/plugin-update-checker": "^5.4"
+  },
   "require-dev": {
     "squizlabs/php_codesniffer": "*",
     "wp-coding-standards/wpcs": "^3.0"
