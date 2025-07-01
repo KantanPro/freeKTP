@@ -1290,9 +1290,10 @@ form > .create-order-btn {
   }
   
   .ktp_header .navigation-links {
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 3px; /* モバイルでも間隔を狭く */
+    margin-bottom: 8px;
   }
   
   .ktp_header .navigation-links a {
