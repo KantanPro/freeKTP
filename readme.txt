@@ -4,7 +4,7 @@ Tags: business, management, orders, invoices, customers, services, suppliers, re
 Requires at least: 5.0
 Tested up to: 6.8.1
 Requires PHP: 7.4
-Stable tag: 1.0.6(preview)
+Stable tag: 1.0.7(preview)
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -185,6 +185,13 @@ KantanProは、WordPress上で以下の業務を一元管理できる多機能�
 
 == 変更履歴 ==
 
+= 1.0.7(preview) =
+* 決済設定機能の削除（ktpdoneプラグインに分離）
+* プラグイン構造の最適化とセキュリティ向上
+* エラーハンドリングの改善
+* パフォーマンス最適化
+* データベース構造の安定化
+
 = 1.0.6(preview) =
 * 管理画面でのプラグイン情報表示の最適化
 * プラグインリファレンス機能の強化
@@ -248,24 +255,3 @@ KantanProは、WordPress上で以下の業務を一元管理できる多機能�
 = 1.0.0(preview) =
 * プレビュー版リリース
 * 6つの管理タブ（仕事リスト・伝票処理・得意先・サービス・協力会社・レポート）
-* 受注案件の進捗管理（7段階）
-* 受注書・請求書のPDF出力機能
-* 顧客・サービス・協力会社のマスター管理
-* スタッフチャット機能
-* モバイル対応UI（レスポンシブデザイン）
-* 部署管理機能
-* 利用規約管理機能
-* 自動更新機能（GitHub連携）
-* 動的更新履歴システム
-* セキュリティ機能の強化
-* セッション管理最適化
-
-== ライセンス ==
-GPL v2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-
-== サポート ==
-プラグインに関するお問い合わせやサポートは、以下までご連絡ください：
-
-**公式サイト**: https://www.kantanpro.com/  
-**開発者プロフィール**: https://www.kantanpro.com/developer-profile/
