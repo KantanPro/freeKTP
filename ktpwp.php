@@ -78,29 +78,7 @@ if ( ! defined( 'MY_PLUGIN_URL' ) ) {
     define( 'MY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 
-/**
- * プラグイン有効化フック（寄付機能用）
- * 寄付機能に必要なデータベーステーブルを作成します。
- */
-register_activation_hook( __FILE__, 'ktpwp_donation_activation' );
-function ktpwp_donation_activation() {
-    // KTPWP_Donationクラスを読み込み
-    if ( ! class_exists( 'KTPWP_Donation' ) ) {
-        require_once KANTANPRO_PLUGIN_DIR . 'includes/class-ktpwp-donation.php';
-    }
-    
-    // テーブル作成メソッドを呼び出し
-    if ( class_exists( 'KTPWP_Donation' ) ) {
-        $donation_instance = KTPWP_Donation::get_instance();
-        if ( method_exists( $donation_instance, 'create_donation_tables' ) ) {
-            $donation_instance->create_donation_tables();
 
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'KTPWP Donation: `create_donation_tables` executed on activation.' );
-            }
-        }
-    }
-}
 
 // === WordPress標準更新システム ===
 // シンプルなバージョン管理
@@ -164,7 +142,7 @@ function ktpwp_autoload_classes() {
         'KTPWP_Department_Manager' => 'includes/class-department-manager.php',
         'KTPWP_Terms_Of_Service' => 'includes/class-ktpwp-terms-of-service.php',
         'KTPWP_Update_Checker'  => 'includes/class-ktpwp-update-checker.php',
-        'KTPWP_Donation'        => 'includes/class-ktpwp-donation.php',
+
     );
 
     foreach ( $classes as $class_name => $file_path ) {
@@ -197,24 +175,8 @@ function ktpwp_init_update_checker() {
     }
 }
 
-// === 寄付通知クラスの初期化 ===
-function ktpwp_init_donation() {
-    if ( class_exists( 'KTPWP_Donation' ) ) {
-        global $ktpwp_donation;
-        $ktpwp_donation = KTPWP_Donation::get_instance();
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'KTPWP Donation: 寄付通知クラスが初期化されました' );
-        }
-    } else {
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'KTPWP Donation: 寄付通知クラスが見つかりません' );
-        }
-    }
-}
-
 // プラグインが完全に読み込まれた後に実行
 add_action( 'plugins_loaded', 'ktpwp_init_update_checker' );
-add_action( 'plugins_loaded', 'ktpwp_init_donation' );
 
 // プラグインアクションリンクは更新チェッカークラスで管理
 
