@@ -43,7 +43,7 @@ echo "  - 完了"
 # 3. ソースファイルをビルドディレクトリにコピー (vendor を除く)
 echo "\n[3/6] ソースファイルをコピー中 (vendorディレクトリを除く)..."
 # コピー除外リスト
-EXCLUDE_LIST=(".git" ".vscode" ".idea" "KantanPro_build_temp" "KantanPro_temp" "wp" "node_modules" "vendor")
+EXCLUDE_LIST=(".git" ".vscode" ".idea" "KantanPro_build_temp" "KantanPro_temp" "wp" "node_modules" "vendor" "ktpdone.php" "ktpdone")
 EXCLUDE_OPTS=""
 for item in "${EXCLUDE_LIST[@]}"; do
     EXCLUDE_OPTS+="--exclude=${item} "
@@ -80,6 +80,8 @@ find "${BUILD_DIR}" -type f -name "wp-cli-aliases.sh" -delete
 find "${BUILD_DIR}" -type f -name "setup-wp-cli.sh" -delete
 find "${BUILD_DIR}" -type f -name "WP-CLI-README.md" -delete
 find "${BUILD_DIR}" -type f \( -name "test-*.php" -o -name "debug-*.php" -o -name "check-*.php" -o -name "fix-*.php" -o -name "migrate-*.php" -o -name "auto-*.php" -o -name "manual-*.php" -o -name "direct-*.php" -o -name "clear-*.php" -o -name "admin-migrate.php" \) -delete
+find "${BUILD_DIR}" -type f -name "ktpdone.php" -delete
+find "${BUILD_DIR}" -type f -name "class-ktpdone-donation.php" -delete
 find "${BUILD_DIR}" -type f \( -name "README.md" -o -name "*.md" -o -name "*.html" \) -delete
 find "${BUILD_DIR}" -type d -name "KantanPro_temp" -exec rm -rf {} +
 find "${BUILD_DIR}" -type d -name "wp" -exec rm -rf {} +
