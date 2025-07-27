@@ -35,38 +35,41 @@ class view_tabs_Class {
 
         // タブの内容を作成（プラグインコンテナクラスを追加してテーマとの競合を防止）
         $view = '<div class="tabs ktp_plugin_container">';
-        // 現在のURL情報を取得
-        $current_url = add_query_arg( null, null );
-
-        // 各タブ用のクリーンなベースURLを作成（KTPWPパラメータを全て除去）
-        $clean_base_url = remove_query_arg(
-            array(
-				'tab_name',
-				'from_client',
-				'customer_name',
-				'user_name',
-				'client_id',
-				'order_id',
-				'delete_order',
-				'data_id',
-				'view_mode',
-				'query_post',
-				'page_start',
-				'page_stage',
-				'message',
-				'search_query',
-				'multiple_results',
-				'no_results',
-				'flg',
-				'sort_by',
-				'sort_order',
-				'order_sort_by',
-				'order_sort_order',
-				'chat_open',
-				'message_sent',  // チャット関連パラメータも除去
-            ),
-            $current_url
-        );
+        // URL生成クラスを使用してクリーンなベースURLを取得
+        if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+            $clean_base_url = KTPWP_URL_Generator::get_current_base_url();
+        } else {
+            // フォールバック: 従来の方法
+            $current_url = add_query_arg( null, null );
+            $clean_base_url = remove_query_arg(
+                array(
+                    'tab_name',
+                    'from_client',
+                    'customer_name',
+                    'user_name',
+                    'client_id',
+                    'order_id',
+                    'delete_order',
+                    'data_id',
+                    'view_mode',
+                    'query_post',
+                    'page_start',
+                    'page_stage',
+                    'message',
+                    'search_query',
+                    'multiple_results',
+                    'no_results',
+                    'flg',
+                    'sort_by',
+                    'sort_order',
+                    'order_sort_by',
+                    'order_sort_order',
+                    'chat_open',
+                    'message_sent',
+                ),
+                $current_url
+            );
+        }
 
         foreach ( $tabs as $key => $value ) {
 			$checked = $position === $key ? ' checked' : '';

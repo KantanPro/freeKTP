@@ -290,7 +290,13 @@ if ( ! class_exists( 'KTPWP_Service_DB' ) ) {
 					if ( $current_page_id ) {
 						$current_page_url = get_permalink( $current_page_id );
 					} else {
-						$current_page_url = home_url( $wp->request );
+						// URL生成クラスを使用してベースURLを取得
+						if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+							$current_page_url = KTPWP_URL_Generator::get_current_page_base_url();
+						} else {
+							// フォールバック: 従来の方法
+							$current_page_url = home_url( $wp->request );
+						}
 					}
 				}
 
@@ -616,7 +622,13 @@ if ( ! class_exists( 'KTPWP_Service_DB' ) ) {
 				if ( $current_page_id ) {
 					$current_page_url = get_permalink( $current_page_id );
 				} else {
-					$current_page_url = home_url( $wp->request );
+					// URL生成クラスを使用してベースURLを取得
+					if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+						$current_page_url = KTPWP_URL_Generator::get_current_page_base_url();
+					} else {
+						// フォールバック: 従来の方法
+						$current_page_url = home_url( $wp->request );
+					}
 				}
 			}
 
@@ -682,7 +694,13 @@ if ( ! class_exists( 'KTPWP_Service_DB' ) ) {
 				if ( $current_page_id ) {
 					$current_page_url = get_permalink( $current_page_id );
 				} else {
-					$current_page_url = home_url( $wp->request );
+					// URL生成クラスを使用してベースURLを取得
+					if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+						$current_page_url = KTPWP_URL_Generator::get_current_page_base_url();
+					} else {
+						// フォールバック: 従来の方法
+						$current_page_url = home_url( $wp->request );
+					}
 				}
 			}
 

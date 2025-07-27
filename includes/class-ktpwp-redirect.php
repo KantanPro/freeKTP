@@ -373,22 +373,28 @@ class KTPWP_Redirect {
      * @return string
      */
     private function get_clean_base_url() {
-        $current_url = add_query_arg( null, null );
+        // URL生成クラスを使用してベースURLを取得
+        if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+            return KTPWP_URL_Generator::get_current_base_url();
+        } else {
+            // フォールバック: 従来の方法
+            $current_url = add_query_arg( null, null );
 
-        $remove_params = array(
-            'tab_name',
-			'from_client',
-			'customer_name',
-			'user_name',
-            'client_id',
-			'order_id',
-			'delete_order',
-			'data_id',
-            'view_mode',
-			'query_post',
-        );
+            $remove_params = array(
+                'tab_name',
+                'from_client',
+                'customer_name',
+                'user_name',
+                'client_id',
+                'order_id',
+                'delete_order',
+                'data_id',
+                'view_mode',
+                'query_post',
+            );
 
-        return remove_query_arg( $remove_params, $current_url );
+            return remove_query_arg( $remove_params, $current_url );
+        }
     }
 
     /**

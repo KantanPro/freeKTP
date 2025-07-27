@@ -79,10 +79,15 @@ if ( ! class_exists( 'KTPWP_Service_UI' ) ) {
 				$sort_order = ( $sort_order_param === 'ASC' ) ? 'ASC' : 'DESC';
 			}
 
-			// 現在のページのURLを生成
-			global $wp;
-			$current_page_id = get_queried_object_id();
-			$base_page_url = add_query_arg( array( 'page_id' => $current_page_id ), home_url( $wp->request ) );
+			// URL生成クラスを使用してベースURLを取得
+			if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+				$base_page_url = KTPWP_URL_Generator::get_current_page_base_url();
+			} else {
+				// フォールバック: 従来の方法
+				global $wp;
+				$current_page_id = get_queried_object_id();
+				$base_page_url = add_query_arg( array( 'page_id' => $current_page_id ), home_url( $wp->request ) );
+			}
 
 			// 表示範囲
 			// 一般設定から表示件数を取得（設定クラスが利用可能な場合）
@@ -477,9 +482,15 @@ END;
 		 * @return string 検索フォームHTML
 		 */
 		public function render_search_form( $name ) {
-			global $wp;
-			$current_page_id = get_queried_object_id();
-			$base_page_url = add_query_arg( array( 'page_id' => $current_page_id ), home_url( $wp->request ) );
+			// URL生成クラスを使用してベースURLを取得
+			if ( class_exists( 'KTPWP_URL_Generator' ) ) {
+				$base_page_url = KTPWP_URL_Generator::get_current_page_base_url();
+			} else {
+				// フォールバック: 従来の方法
+				global $wp;
+				$current_page_id = get_queried_object_id();
+				$base_page_url = add_query_arg( array( 'page_id' => $current_page_id ), home_url( $wp->request ) );
+			}
 
 			$nonce = wp_create_nonce( 'ktp_service_action' );
 
