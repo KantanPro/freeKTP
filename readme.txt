@@ -4,7 +4,7 @@ Tags: business, order management, customer management, invoice, report, staff ch
 Requires at least: 5.0
 Tested up to: 6.9.1
 Requires PHP: 7.4
-Stable tag: 1.1.14(preview)
+Stable tag: 1.1.16(preview)
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,7 @@ KantanProは、WordPress上で以下の業務を一元管理できる多機能�
 - **パフォーマンスの向上**（キャッシュシステム最適化・データベースクエリ効率化・メモリ使用量最適化・画像最適化・JavaScript・CSS最適化・セッション管理最適化・Ajax通信最適化）
 - **マイグレーション中にエラー解消**（データベース更新処理の安定化・エラーハンドリング強化）
 - **利用規約の表示対象を修正**（より適切な対象への変更）
+- **URL生成問題を修正**（サブディレクトリに依存しない統一されたURL生成）
 
 == インストール ==
 
@@ -234,6 +235,13 @@ KantanProは、WordPress上で以下の業務を一元管理できる多機能�
 * 推奨PHP拡張: GD（画像処理用）
 
 == 変更履歴 ==
+
+= 1.1.16(preview) - 2025年7月27日 =
+* URL生成問題を修正
+  - サブディレクトリに依存しない統一されたURL生成
+  - 統一されたURL生成クラスの実装
+  - ローカル環境と配布先環境での一貫したURL生成
+  - フォールバック機能による後方互換性の確保
 
 = 1.1.15(preview) - 2025年7月26日 =
 * 利便性の向上
@@ -514,6 +522,13 @@ A: XSS・CSRF・SQLインジェクション対策、ファイルアップロー�
 5. レポート画面
 
 == チャンジェログ ==
+
+= 1.1.16(preview) - 2025年7月27日 =
+* URL生成問題を修正（サブディレクトリに依存しない統一されたURL生成）
+  - 統一されたURL生成クラスの実装
+  - サブディレクトリ環境でのURL生成の安定化
+  - ローカル環境と配布先環境での一貫したURL生成
+  - フォールバック機能による後方互換性の確保
 
 = 1.1.13(preview) - 2025年7月25日 =
 * パフォーマンスの向上
