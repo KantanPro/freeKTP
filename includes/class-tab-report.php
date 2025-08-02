@@ -52,20 +52,11 @@ if ( ! class_exists( 'KTPWP_Report_Class' ) ) {
 				return;
 			}
 
-			// ライセンスマネージャーのインスタンスを取得
-			$license_manager = KTPWP_License_Manager::get_instance();
-			$is_license_valid = $license_manager->is_license_valid();
-
 			$ui_generator = new KTPWP_Ui_Generator();
 			$graph_renderer = new KTPWP_Graph_Renderer();
 
 			$content = $ui_generator->generate_controller();
-
-			if ( ! $is_license_valid ) {
-				$content .= $graph_renderer->render_dummy_graph();
-			} else {
-				$content .= $graph_renderer->render_graphs();
-			}
+			$content .= $graph_renderer->render_dummy_graph();
 
 			return $content;
 		}

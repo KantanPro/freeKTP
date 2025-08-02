@@ -79,18 +79,7 @@
     pointer-events: auto !important;
 }
 
-/* ライセンス設定ページの特別な調整 */
-.ktp-admin-wrap .ktp-settings-container {
-    position: relative !important;
-    z-index: 1 !important;
-    pointer-events: auto !important;
-}
 
-.ktp-admin-wrap .ktp-settings-section {
-    position: relative !important;
-    z-index: 1 !important;
-    pointer-events: auto !important;
-}
 
 /* タブナビゲーションの優先度を最高に */
 .ktp-admin-wrap .nav-tab-wrapper {
@@ -105,28 +94,7 @@
     pointer-events: auto !important;
 }
 
-/* ライセンスステータス */
-.ktp-admin-wrap .ktp-license-status {
-    margin-top: 8px !important;
-    font-weight: bold !important;
-    display: flex !important;
-    align-items: center !important;
-}
 
-/* ライセンスステータスのアイコン */
-.ktp-admin-wrap .ktp-license-status.active {
-    color: #46b450 !important;
-}
-
-/* ライセンスステータスのアイコン */
-.ktp-admin-wrap .ktp-license-status.inactive {
-    color: #dc3232 !important;
-}
-
-/* ライセンスステータスのアイコン */
-.ktp-admin-wrap .ktp-license-status .dashicons {
-    margin-right: 5px !important;
-}
 
 /* 印刷ボタンエリア */
 .ktp-admin-wrap .printer {
