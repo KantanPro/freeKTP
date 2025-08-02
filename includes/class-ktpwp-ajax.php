@@ -287,6 +287,9 @@ class KTPWP_Ajax {
 		// 受注書データ取得
 		add_action('wp_ajax_ktp_get_order_data', array($this, 'get_order_data'));
 		add_action('wp_ajax_nopriv_ktp_get_order_data', array($this, 'get_order_data'));
+
+		// レポート機能用のAJAXアクション
+		add_action( 'wp_ajax_ktpwp_get_report_data', array( $this, 'get_report_data' ) );
 	}
 
 	/**
@@ -463,6 +466,8 @@ class KTPWP_Ajax {
 		global $wp_scripts;
 
 		if ( isset( $wp_scripts->registered['ktp-js'] ) ) {
+			// ktp_ajax_objectにnonceプロパティを追加
+			$ajax_data['nonce'] = $ajax_data['nonces']['general'];
 			wp_add_inline_script( 'ktp-js', 'var ktp_ajax_object = ' . json_encode( $ajax_data ) . ';' );
 			wp_add_inline_script( 'ktp-js', 'var ktpwp_ajax = ' . json_encode( $ajax_data ) . ';' );
 			wp_add_inline_script( 'ktp-js', 'var ajaxurl = ' . json_encode( $ajax_data['ajax_url'] ) . ';' );
@@ -2391,7 +2396,7 @@ class KTPWP_Ajax {
 					if ( file_exists( $temp_file ) ) {
 						unlink( $temp_file );
 						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-							error_log( 'KTPWP Purchase Order Email Error: Cleaned up temp file on error: ' . basename( $temp_file ) );
+							error_log( 'KTPWP Ajax send_purchase_order_email Error: Cleaned up temp file on error: ' . basename( $temp_file ) );
 						}
 					}
 				}
@@ -3855,7 +3860,7 @@ class KTPWP_Ajax {
 	 */
 	public function get_order_data() {
 		// セキュリティチェック
-		if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ktp_ajax_nonce')) {
+		if (!isset($_POST['ktp_ajax_nonce']) || !wp_verify_nonce($_POST['ktp_ajax_nonce'], 'ktp_ajax_nonce')) {
 			wp_send_json_error('セキュリティチェックに失敗しました。');
 			return;
 		}
@@ -4384,7 +4389,7 @@ class KTPWP_Ajax {
 					'order_info' => array(
 						'project_name' => $order->project_name,
 						'order_date' => $order->order_date,
-						'delivery_date' => isset( $order->delivery_date ) ? $order->delivery_date : null,
+						'expected_delivery_date' => isset( $order->expected_delivery_date ) ? $order->expected_delivery_date : null,
 						'client_name' => $client ? $client->company_name : $order->customer_name,
 					),
 					'cost_summary' => array(
@@ -4656,5 +4661,456 @@ class KTPWP_Ajax {
 		$body .= $my_company . "\n";
 
 		return $body;
+	}
+
+	/**
+	 * Initialize AJAX handlers
+	 *
+	 * @since 1.0.0
+	 */
+	public function init() {
+		// 既存のAJAXハンドラー
+		add_action( 'wp_ajax_ktp_get_departments', array( $this, 'get_departments' ) );
+		add_action( 'wp_ajax_ktp_get_supplier_costs', array( $this, 'get_supplier_costs' ) );
+		
+		// レポートタブ用のAJAXハンドラー
+		add_action( 'wp_ajax_ktp_get_report_data', array( $this, 'get_report_data' ) );
+		add_action( 'wp_ajax_ktp_get_sales_data', array( $this, 'get_sales_data' ) );
+		add_action( 'wp_ajax_ktp_get_progress_data', array( $this, 'get_progress_data' ) );
+		add_action( 'wp_ajax_ktp_get_client_data', array( $this, 'get_client_data' ) );
+		add_action( 'wp_ajax_ktp_get_service_data', array( $this, 'get_service_data' ) );
+		add_action( 'wp_ajax_ktp_get_supplier_data', array( $this, 'get_supplier_data' ) );
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'レポートAJAXハンドラー登録完了: ktp_get_report_data' );
+			error_log( '登録されたAJAXアクション: wp_ajax_ktp_get_report_data' );
+		}
+	}
+
+	/**
+	 * Get report data for charts
+	 *
+	 * @since 1.0.0
+	 */
+	public function get_report_data() {
+		// 権限チェック
+		if ( ! current_user_can( 'edit_posts' ) && ! current_user_can( 'ktpwp_access' ) ) {
+			wp_die( __( '権限がありません。', 'ktpwp' ) );
+		}
+
+		// ノンスチェック
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'レポートAJAX リクエスト開始: ' . ( isset( $_POST['action'] ) ? $_POST['action'] : 'NO_ACTION' ) );
+			error_log( 'レポートAJAX nonce検証: ' . ( isset( $_POST['nonce'] ) ? $_POST['nonce'] : 'NOT_SET' ) );
+		}
+		
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'ktpwp_ajax_nonce' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'レポートAJAX nonce検証失敗: ' . ( isset( $_POST['nonce'] ) ? $_POST['nonce'] : 'NOT_SET' ) );
+			}
+			wp_die( __( 'セキュリティチェックに失敗しました。', 'ktpwp' ) );
+		}
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'レポートAJAX nonce検証成功' );
+		}
+
+		$report_type = sanitize_text_field( $_POST['report_type'] );
+		$period = sanitize_text_field( $_POST['period'] );
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'レポートAJAX リクエスト詳細: report_type=' . $report_type . ', period=' . $period );
+		}
+
+		global $wpdb;
+
+		switch ( $report_type ) {
+			case 'sales':
+				$data = $this->get_sales_chart_data( $period );
+				break;
+			case 'client':
+				$data = $this->get_client_chart_data( $period );
+				break;
+			case 'service':
+				$data = $this->get_service_chart_data( $period );
+				break;
+			case 'supplier':
+				$data = $this->get_supplier_chart_data( $period );
+				break;
+			default:
+				$data = array( 'error' => '無効なレポートタイプです。' );
+		}
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'レポートAJAX レスポンスデータ: ' . json_encode( $data ) );
+		}
+
+		wp_send_json_success( $data );
+	}
+
+	/**
+	 * Get sales chart data
+	 *
+	 * @since 1.0.0
+	 * @param string $period Period type
+	 * @return array Chart data
+	 */
+	private function get_sales_chart_data( $period ) {
+		global $wpdb;
+
+		$where_clause = $this->get_period_where_clause( $period );
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '売上データ取得開始: period=' . $period . ', where_clause=' . $where_clause );
+			
+			// データベースの全件数を確認
+			$total_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}ktp_order");
+			error_log( '注文テーブル総件数: ' . $total_count );
+			
+			// 期間別件数を確認
+			$period_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}ktp_order o WHERE 1=1 {$where_clause}");
+			error_log( '期間別件数: ' . $period_count );
+		}
+
+		// 月別売上データ（請求済以降の進捗で、請求項目がある案件のみ）
+		$monthly_query = "SELECT 
+			DATE_FORMAT(o.created_at, '%Y-%m') as month,
+			SUM(ii.amount) as total_sales
+			FROM {$wpdb->prefix}ktp_order o
+			LEFT JOIN {$wpdb->prefix}ktp_order_invoice_items ii ON o.id = ii.order_id
+			WHERE 1=1 {$where_clause} AND ii.amount IS NOT NULL AND o.progress >= 5 AND o.progress != 7
+			GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
+			ORDER BY month";
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '月別売上クエリ: ' . $monthly_query );
+		}
+
+		$monthly_results = $wpdb->get_results( $monthly_query );
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '月別売上結果: ' . json_encode( $monthly_results ) );
+		}
+
+		// 利益推移データ（請求済以降の進捗で、売上とコストを時系列で取得）
+		$profit_query = "SELECT 
+			DATE_FORMAT(o.created_at, '%Y-%m') as month,
+			SUM(ii.amount) as total_sales,
+			SUM(COALESCE(oci.amount, 0)) as total_cost
+			FROM {$wpdb->prefix}ktp_order o
+			LEFT JOIN (
+				SELECT order_id, SUM(amount) as amount 
+				FROM {$wpdb->prefix}ktp_order_invoice_items 
+				GROUP BY order_id
+			) ii ON o.id = ii.order_id
+			LEFT JOIN (
+				SELECT order_id, SUM(amount) as amount 
+				FROM {$wpdb->prefix}ktp_order_cost_items 
+				GROUP BY order_id
+			) oci ON o.id = oci.order_id
+			WHERE 1=1 {$where_clause} AND ii.amount IS NOT NULL AND o.progress >= 5 AND o.progress != 7
+			GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
+			ORDER BY month";
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '利益推移クエリ: ' . $profit_query );
+		}
+
+		$profit_results = $wpdb->get_results( $profit_query );
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '利益推移結果: ' . json_encode( $profit_results ) );
+		}
+
+		$monthly_data = array();
+		$profit_data = array();
+
+		foreach ( $monthly_results as $result ) {
+			$monthly_data[] = array(
+				'label' => $result->month,
+				'value' => (int) $result->total_sales
+			);
+		}
+
+		foreach ( $profit_results as $result ) {
+			$sales = (int) $result->total_sales;
+			$cost = (int) $result->total_cost;
+			$profit = $sales - $cost;
+			
+			$profit_data[] = array(
+				'label' => $result->month,
+				'sales' => $sales,
+				'cost' => $cost,
+				'profit' => $profit
+			);
+		}
+
+		return array(
+			'monthly_sales' => array(
+				'labels' => array_column($monthly_data, 'label'),
+				'data' => array_column($monthly_data, 'value')
+			),
+			'profit_trend' => array(
+				'labels' => array_column($profit_data, 'label'),
+				'sales' => array_column($profit_data, 'sales'),
+				'cost' => array_column($profit_data, 'cost'),
+				'profit' => array_column($profit_data, 'profit')
+			)
+		);
+	}
+
+
+
+	/**
+	 * Get client chart data
+	 *
+	 * @since 1.0.0
+	 * @param string $period Period type
+	 * @return array Chart data
+	 */
+	private function get_client_chart_data( $period ) {
+		global $wpdb;
+
+		$where_clause = $this->get_period_where_clause( $period );
+
+		// 顧客別売上TOP10（請求済以降の進捗状況の案件のみ）
+		$sales_query = "SELECT 
+			o.customer_name,
+			SUM(ii.amount) as total_sales
+			FROM {$wpdb->prefix}ktp_order o
+			LEFT JOIN {$wpdb->prefix}ktp_order_invoice_items ii ON o.id = ii.order_id
+			WHERE 1=1 {$where_clause} 
+			AND ii.amount IS NOT NULL 
+			AND o.progress >= 5 
+			AND o.progress != 7
+			GROUP BY o.customer_name
+			ORDER BY total_sales DESC
+			LIMIT 10";
+
+		$sales_results = $wpdb->get_results( $sales_query );
+
+		// 顧客別案件数TOP10（請求済以降の進捗状況の案件のみ）
+		$order_query = "SELECT 
+			o.customer_name,
+			COUNT(o.id) as order_count
+			FROM {$wpdb->prefix}ktp_order o
+			WHERE 1=1 {$where_clause} 
+			AND o.progress >= 5 
+			AND o.progress != 7
+			GROUP BY o.customer_name
+			ORDER BY order_count DESC
+			LIMIT 10";
+
+		$order_results = $wpdb->get_results( $order_query );
+
+		$sales_data = array();
+		$order_data = array();
+
+		foreach ( $sales_results as $result ) {
+			$sales_data[] = array(
+				'label' => $result->customer_name ?: '不明',
+				'value' => (int) $result->total_sales
+			);
+		}
+
+		foreach ( $order_results as $result ) {
+			$order_data[] = array(
+				'label' => $result->customer_name ?: '不明',
+				'value' => (int) $result->order_count
+			);
+		}
+
+		return array(
+			'client_sales' => array(
+				'labels' => array_column($sales_data, 'label'),
+				'data' => array_column($sales_data, 'value')
+			),
+			'client_orders' => array(
+				'labels' => array_column($order_data, 'label'),
+				'data' => array_column($order_data, 'value')
+			)
+		);
+	}
+
+			/**
+		 * Get service chart data
+		 *
+		 * @since 1.0.0
+		 * @param string $period Period type
+		 * @return array Chart data
+		 */
+		private function get_service_chart_data( $period ) {
+			global $wpdb;
+
+			$where_clause = $this->get_period_where_clause( $period );
+
+			// サービス別売上TOP5（請求済以降の進捗状況の案件のみ）
+			$sales_query = "SELECT 
+				ii.product_name as service_name,
+				SUM(ii.amount) as total_sales
+				FROM {$wpdb->prefix}ktp_order o 
+				LEFT JOIN {$wpdb->prefix}ktp_order_invoice_items ii ON o.id = ii.order_id 
+				WHERE 1=1 {$where_clause} 
+				AND ii.amount IS NOT NULL 
+				AND o.progress >= 5 
+				AND o.progress != 7
+				GROUP BY ii.product_name 
+				ORDER BY total_sales DESC 
+				LIMIT 5";
+
+			$sales_results = $wpdb->get_results( $sales_query );
+
+			// サービス別比率（受注以降の進捗状況の案件のみ）
+			$usage_query = "SELECT 
+				ii.product_name as service_name,
+				COUNT(DISTINCT o.id) as usage_count
+				FROM {$wpdb->prefix}ktp_order o 
+				LEFT JOIN {$wpdb->prefix}ktp_order_invoice_items ii ON o.id = ii.order_id 
+				WHERE 1=1 {$where_clause} 
+				AND ii.amount IS NOT NULL 
+				AND o.progress >= 3 
+				AND o.progress != 7
+				GROUP BY ii.product_name 
+				ORDER BY usage_count DESC 
+				LIMIT 5";
+
+			$usage_results = $wpdb->get_results( $usage_query );
+
+			$sales_data = array();
+			$usage_data = array();
+
+			foreach ( $sales_results as $result ) {
+				$sales_data[] = array(
+					'label' => $result->service_name ?: '不明',
+					'value' => (int) $result->total_sales
+				);
+			}
+
+			foreach ( $usage_results as $result ) {
+				$usage_data[] = array(
+					'label' => $result->service_name ?: '不明',
+					'value' => (int) $result->usage_count
+				);
+			}
+
+					return array(
+			'service_sales' => array(
+				'labels' => array_column($sales_data, 'label'),
+				'data' => array_column($sales_data, 'value')
+			),
+			'service_quantity' => array(
+				'labels' => array_column($usage_data, 'label'),
+				'data' => array_column($usage_data, 'value')
+			)
+		);
+		}
+
+			/**
+		 * Get supplier chart data
+		 *
+		 * @since 1.0.0
+		 * @param string $period Period type
+		 * @return array Chart data
+		 */
+		private function get_supplier_chart_data( $period ) {
+			global $wpdb;
+
+			$where_clause = $this->get_period_where_clause( $period );
+
+			// 協力会社別貢献度TOP5（請求済以降の進捗状況の案件のみ）
+			$contribution_query = "SELECT 
+				s.company_name,
+				SUM(oci.amount) as total_contribution
+				FROM {$wpdb->prefix}ktp_order o 
+				LEFT JOIN {$wpdb->prefix}ktp_order_cost_items oci ON o.id = oci.order_id 
+				LEFT JOIN {$wpdb->prefix}ktp_supplier s ON oci.supplier_id = s.id 
+				WHERE 1=1 {$where_clause} 
+				AND oci.supplier_id IS NOT NULL 
+				AND o.progress >= 5 
+				AND o.progress != 7
+				GROUP BY s.id 
+				ORDER BY total_contribution DESC 
+				LIMIT 5";
+
+			$contribution_results = $wpdb->get_results( $contribution_query );
+
+			// スキル別協力会社数TOP5
+			$skill_query = "SELECT 
+				ss.product_name,
+				COUNT(*) as skill_count
+				FROM {$wpdb->prefix}ktp_supplier_skills ss
+				LEFT JOIN {$wpdb->prefix}ktp_supplier s ON ss.supplier_id = s.id
+				WHERE ss.product_name IS NOT NULL
+				GROUP BY ss.product_name
+				ORDER BY skill_count DESC
+				LIMIT 5";
+
+			$skill_results = $wpdb->get_results( $skill_query );
+
+			$contribution_data = array();
+			$skill_data = array();
+
+			foreach ( $contribution_results as $result ) {
+				$contribution_data[] = array(
+					'label' => $result->company_name ?: '不明',
+					'value' => (int) $result->total_contribution
+				);
+			}
+
+			foreach ( $skill_results as $result ) {
+				$skill_data[] = array(
+					'label' => $result->product_name ?: '不明',
+					'value' => (int) $result->skill_count
+				);
+			}
+
+					return array(
+			'supplier_skills' => array(
+				'labels' => array_column($contribution_data, 'label'),
+				'data' => array_column($contribution_data, 'value')
+			),
+			'skill_suppliers' => array(
+				'labels' => array_column($skill_data, 'label'),
+				'data' => array_column($skill_data, 'value')
+			)
+		);
+		}
+
+	/**
+	 * Get period WHERE clause
+	 *
+	 * @since 1.0.0
+	 * @param string $period Period type
+	 * @return string WHERE clause
+	 */
+	private function get_period_where_clause( $period ) {
+		$where_clause = '';
+
+		switch ( $period ) {
+			case 'this_year':
+				$where_clause = " AND YEAR(o.created_at) = YEAR(CURDATE())";
+				break;
+			case 'last_year':
+				$where_clause = " AND YEAR(o.created_at) = YEAR(CURDATE()) - 1";
+				break;
+			case 'this_month':
+				$where_clause = " AND YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE())";
+				break;
+			case 'last_month':
+				$where_clause = " AND YEAR(o.created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(o.created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))";
+				break;
+			case 'last_3_months':
+				$where_clause = " AND o.created_at >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)";
+				break;
+			case 'last_6_months':
+				$where_clause = " AND o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
+				break;
+			case 'all_time':
+			default:
+				$where_clause = "";
+				break;
+		}
+
+		return $where_clause;
 	}
 }

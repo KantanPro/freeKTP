@@ -198,7 +198,7 @@ class KTP_Settings {
         add_action( 'phpmailer_init', array( $this, 'setup_smtp_settings' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_scripts' ) );
-
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_license_manager_assets' ) );
         add_action( 'wp_head', array( $this, 'output_custom_styles' ) );
         add_action( 'admin_head', array( $this, 'output_custom_styles' ) );
         add_action( 'admin_init', array( $this, 'handle_default_settings_actions' ) );
@@ -261,7 +261,30 @@ class KTP_Settings {
         }
     }
 
-
+    /**
+     * Enqueue license manager scripts and styles
+     *
+     * @since 1.0.0
+     * @param string $hook Current admin page hook
+     */
+    public function enqueue_license_manager_assets( $hook ) {
+        // License pageでのみ読み込み
+        if ( $hook === 'toplevel_page_ktp-license' ) {
+            wp_enqueue_script( 'ktp-license-manager', plugin_dir_url( __DIR__ ) . 'js/ktp-license-manager.js', array( 'jquery' ), KANTANPRO_PLUGIN_VERSION, true );
+            
+            // AJAX用のデータをローカライズ
+            wp_localize_script( 'ktp-license-manager', 'ktp_license_ajax', array(
+                'ajaxurl' => admin_url( 'admin-ajax.php' ),
+                'nonce'   => wp_create_nonce( 'ktp_license_nonce' ),
+                'strings' => array(
+                    'verifying' => __( '認証中...', 'ktpwp' ),
+                    'success'   => __( 'ライセンスが正常に認証されました。', 'ktpwp' ),
+                    'error'     => __( 'ライセンスの認証に失敗しました。', 'ktpwp' ),
+                    'network_error' => __( '通信エラーが発生しました。', 'ktpwp' )
+                )
+            ) );
+        }
+    }
 
     /**
      * Activate plugin and set default options
@@ -367,12 +390,6 @@ class KTP_Settings {
         if ( false === get_option( 'ktp_logo_image' ) ) {
             add_option( 'ktp_logo_image', $default_logo );
         }
-
-        // ライセンス関連のオプションを削除（ライセンス設定廃止対応）
-        delete_option( 'ktp_license_key' );
-        delete_option( 'ktp_activation_key' );
-        delete_option( 'ktp_license_status' );
-        delete_option( 'ktp_license_info' );
 
         // 寄付設定のデフォルト値を設定
         $donation_option_name = 'ktp_donation_settings';
@@ -598,6 +615,8 @@ class KTP_Settings {
             array( $this, 'create_staff_page' ) // 表示を処理する関数
         );
 
+        // ライセンス設定メニューは廃止
+
         // サブメニュー - 開発者設定
         add_submenu_page(
             'ktp-settings', // 親メニューのスラッグ
@@ -700,6 +719,11 @@ class KTP_Settings {
                         ?>
                         </form>
                     </div>
+                <?php elseif ( $current_tab === 'development' ) : ?>
+                    <!-- 開発環境設定 -->
+                    <div class="ktp-settings-section">
+                        <?php $this->render_development_environment_tab(); ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -723,6 +747,10 @@ class KTP_Settings {
                 'name' => __( '更新通知設定', 'ktpwp' ),
                 'icon' => 'dashicons-update',
             ),
+            'development' => array(
+                'name' => __( '開発環境', 'ktpwp' ),
+                'icon' => 'dashicons-admin-tools',
+            ),
         );
 
         echo '<h2 class="nav-tab-wrapper">';
@@ -744,6 +772,191 @@ class KTP_Settings {
         // 開発者設定ページにリダイレクト
         wp_redirect( admin_url( 'admin.php?page=ktp-developer-settings&tab=payment' ) );
         exit;
+    }
+
+    /**
+     * 開発環境タブのレンダリング
+     */
+    private function render_development_environment_tab() {
+        // 開発環境でのみ表示
+        if ( ! $this->is_development_environment() ) {
+            echo '<div class="notice notice-warning">';
+            echo '<p><strong>' . esc_html__( '注意:', 'ktpwp' ) . '</strong> ' . esc_html__( 'このページは開発環境でのみ表示されます。本番環境では表示されません。', 'ktpwp' ) . '</p>';
+            echo '</div>';
+            return;
+        }
+
+        // 開発環境用のアクション処理
+        $this->handle_development_actions();
+
+        // ライセンスマネージャーのインスタンスを取得
+        if ( class_exists( 'KTPWP_License_Manager' ) ) {
+            $license_manager = KTPWP_License_Manager::get_instance();
+            $dev_info = $license_manager->get_development_info();
+            $license_status = $license_manager->get_license_status();
+        } else {
+            $dev_info = array(
+                'is_development' => false,
+                'host' => $_SERVER['HTTP_HOST'] ?? 'unknown',
+                'dev_license_key' => 'N/A',
+                'current_license_key' => get_option( 'ktp_license_key' ),
+                'license_status' => get_option( 'ktp_license_status' ),
+                'is_dev_license_active' => false
+            );
+            $license_status = array(
+                'status' => 'unknown',
+                'message' => __( 'ライセンスマネージャーが利用できません。', 'ktpwp' ),
+                'icon' => 'dashicons-warning',
+                'color' => '#f56e28'
+            );
+        }
+        ?>
+
+        <div class="card">
+            <h2><?php esc_html_e( '環境情報', 'ktpwp' ); ?></h2>
+            <table class="form-table">
+                <tr>
+                    <th><?php esc_html_e( '開発環境', 'ktpwp' ); ?></th>
+                    <td><?php echo $dev_info['is_development'] ? esc_html__( 'はい', 'ktpwp' ) : esc_html__( 'いいえ', 'ktpwp' ); ?></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'ホスト名', 'ktpwp' ); ?></th>
+                    <td><?php echo esc_html( $dev_info['host'] ); ?></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( '開発用ライセンスキー', 'ktpwp' ); ?></th>
+                    <td><code><?php echo esc_html( $dev_info['dev_license_key'] ); ?></code></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( '現在のライセンスキー', 'ktpwp' ); ?></th>
+                    <td><?php echo empty( $dev_info['current_license_key'] ) ? esc_html__( '未設定', 'ktpwp' ) : esc_html( $dev_info['current_license_key'] ); ?></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'ライセンスステータス', 'ktpwp' ); ?></th>
+                    <td>
+                        <span class="dashicons <?php echo esc_attr( $license_status['icon'] ); ?>" style="color: <?php echo esc_attr( $license_status['color'] ); ?>;"></span>
+                        <?php echo esc_html( $license_status['message'] ); ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( '開発用ライセンス有効', 'ktpwp' ); ?></th>
+                    <td><?php echo $dev_info['is_dev_license_active'] ? esc_html__( 'はい', 'ktpwp' ) : esc_html__( 'いいえ', 'ktpwp' ); ?></td>
+                </tr>
+            </table>
+        </div>
+
+        <?php if ( $dev_info['is_development'] && class_exists( 'KTPWP_License_Manager' ) ) : ?>
+            <div class="card">
+                <h2><?php esc_html_e( '開発用ライセンス操作', 'ktpwp' ); ?></h2>
+                <form method="post" action="">
+                    <?php wp_nonce_field( 'ktp_development_action', 'ktp_development_nonce' ); ?>
+                    
+                    <p>
+                        <button type="submit" name="ktp_development_action" value="set_dev_license" class="button button-primary">
+                            <?php esc_html_e( '開発用ライセンスを設定', 'ktpwp' ); ?>
+                        </button>
+                        <span class="description"><?php esc_html_e( 'レポート機能の開発に必要な万能ライセンスキーを設定します。', 'ktpwp' ); ?></span>
+                    </p>
+                </form>
+
+                <form method="post" action="">
+                    <?php wp_nonce_field( 'ktp_development_action', 'ktp_development_nonce' ); ?>
+                    
+                    <p>
+                        <button type="submit" name="ktp_development_action" value="clear_license" class="button button-secondary">
+                            <?php esc_html_e( 'ライセンスデータをクリア', 'ktpwp' ); ?>
+                        </button>
+                        <span class="description"><?php esc_html_e( 'すべてのライセンスデータを削除します。', 'ktpwp' ); ?></span>
+                    </p>
+                </form>
+
+                <form method="post" action="">
+                    <?php wp_nonce_field( 'ktp_development_action', 'ktp_development_nonce' ); ?>
+                    
+                    <p>
+                        <button type="submit" name="ktp_development_action" value="reset_license" class="button button-secondary">
+                            <?php esc_html_e( 'ライセンス状態をリセット', 'ktpwp' ); ?>
+                        </button>
+                        <span class="description"><?php esc_html_e( 'ライセンス状態を無効にリセットします。', 'ktpwp' ); ?></span>
+                    </p>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2><?php esc_html_e( 'テストリンク', 'ktpwp' ); ?></h2>
+                <p>
+                    <a href="<?php echo admin_url( 'admin.php?page=ktp-settings&tab=report' ); ?>" class="button">
+                        <?php esc_html_e( 'レポートタブを開く', 'ktpwp' ); ?>
+                    </a>
+                    <span class="description"><?php esc_html_e( 'レポート機能の動作を確認します。', 'ktpwp' ); ?></span>
+                </p>
+                <p>
+                    <a href="<?php echo plugins_url( 'test-license-reset.php', dirname( __FILE__ ) ); ?>" class="button" target="_blank">
+                        <?php esc_html_e( 'ライセンステストスクリプトを実行', 'ktpwp' ); ?>
+                    </a>
+                    <span class="description"><?php esc_html_e( '詳細なライセンス状態を確認します。', 'ktpwp' ); ?></span>
+                </p>
+            </div>
+        <?php endif; ?>
+        <?php
+    }
+
+    /**
+     * 開発環境の判定
+     */
+    private function is_development_environment() {
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        
+        return in_array( $host, ['localhost', '127.0.0.1'] ) || 
+               strpos( $host, '.local' ) !== false || 
+               strpos( $host, '.test' ) !== false ||
+               strpos( $host, '.dev' ) !== false ||
+               strpos( $host, 'localhost:' ) !== false ||
+               strpos( $host, '127.0.0.1:' ) !== false ||
+               ( defined( 'WP_ENV' ) && WP_ENV === 'development' ) ||
+               ( defined( 'KTPWP_DEVELOPMENT_MODE' ) && KTPWP_DEVELOPMENT_MODE === true );
+    }
+
+    /**
+     * 開発環境用のアクション処理
+     */
+    private function handle_development_actions() {
+        if ( ! isset( $_POST['ktp_development_action'] ) || 
+             ! wp_verify_nonce( $_POST['ktp_development_nonce'], 'ktp_development_action' ) ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'この操作を実行する権限がありません。', 'ktpwp' ) );
+        }
+
+        if ( ! class_exists( 'KTPWP_License_Manager' ) ) {
+            add_settings_error( 'ktp_development', 'license_manager_not_found', __( 'ライセンスマネージャーが利用できません。', 'ktpwp' ), 'error' );
+            return;
+        }
+
+        $action = sanitize_text_field( $_POST['ktp_development_action'] );
+        $license_manager = KTPWP_License_Manager::get_instance();
+
+        switch ( $action ) {
+            case 'set_dev_license':
+                if ( $license_manager->set_development_license() ) {
+                    add_settings_error( 'ktp_development', 'dev_license_set', __( '開発用ライセンスが設定されました。', 'ktpwp' ), 'success' );
+                } else {
+                    add_settings_error( 'ktp_development', 'dev_license_failed', __( '開発用ライセンスの設定に失敗しました。', 'ktpwp' ), 'error' );
+                }
+                break;
+
+            case 'clear_license':
+                $license_manager->clear_all_license_data();
+                add_settings_error( 'ktp_development', 'license_cleared', __( 'ライセンスデータがクリアされました。', 'ktpwp' ), 'success' );
+                break;
+
+            case 'reset_license':
+                $license_manager->reset_license_for_testing();
+                add_settings_error( 'ktp_development', 'license_reset', __( 'ライセンス状態がリセットされました。', 'ktpwp' ), 'success' );
+                break;
+        }
     }
 
     /**
@@ -1684,7 +1897,45 @@ class KTP_Settings {
         <?php
     }
 
+    /**
+     * ライセンス設定ページは廃止されました
+     */
+    public function create_license_page() {
+        wp_die( __( 'ライセンス設定ページは廃止されました。', 'ktpwp' ) );
+    }
 
+    /**
+     * ライセンス状態再確認の処理
+     */
+    private function handle_license_recheck() {
+        $license_key = get_option( 'ktp_license_key' );
+        
+        if ( empty( $license_key ) ) {
+            add_settings_error( 'ktp_license', 'no_license_key', __( 'ライセンスキーが設定されていません。', 'ktpwp' ), 'error' );
+            return;
+        }
+
+        // ライセンスマネージャーのインスタンスを取得
+        $license_manager = KTPWP_License_Manager::get_instance();
+        
+        // 強制的にライセンスを再検証
+        $result = $license_manager->verify_license( $license_key );
+        
+        if ( $result['success'] ) {
+            // ライセンスが有効な場合、情報を更新
+            update_option( 'ktp_license_status', 'active' );
+            update_option( 'ktp_license_info', $result['data'] );
+            update_option( 'ktp_license_verified_at', current_time( 'timestamp' ) );
+            
+            add_settings_error( 'ktp_license', 'recheck_success', __( 'ライセンス状態の再確認が完了しました。ライセンスは有効です。', 'ktpwp' ), 'success' );
+        } else {
+            // ライセンスが無効な場合、ステータスを更新
+            update_option( 'ktp_license_status', 'invalid' );
+            error_log( 'KTPWP License: License recheck failed: ' . $result['message'] );
+            
+            add_settings_error( 'ktp_license', 'recheck_failed', __( 'ライセンス状態の再確認が完了しました。ライセンスは無効です。', 'ktpwp' ) . ' (' . $result['message'] . ')', 'error' );
+        }
+    }
 
     /**
      * デザイン設定ページの表示
@@ -1757,6 +2008,13 @@ class KTP_Settings {
             wp_enqueue_script( 'media-upload' );
             wp_enqueue_script( 'thickbox' );
             wp_enqueue_style( 'thickbox' );
+        }
+
+        // ライセンス状態再確認の処理
+        if ( isset( $_POST['ktp_license_recheck'] ) && wp_verify_nonce( $_POST['ktp_license_recheck_nonce'], 'ktp_license_recheck' ) ) {
+            if ( current_user_can( 'manage_options' ) ) {
+                $this->handle_license_recheck();
+            }
         }
 
         // アクティベーションキー保存時の通知
@@ -1850,7 +2108,8 @@ class KTP_Settings {
                     'enable_admin_notifications' => true,
                     'enable_frontend_notifications' => true,
                     'check_interval' => 24,
-                    'notification_roles' => array( 'administrator' )
+                    'notification_roles' => array( 'administrator' ),
+                    'github_token' => ''
                 )
             )
         );
@@ -2065,6 +2324,15 @@ class KTP_Settings {
             'update_notification_setting_section'
         );
 
+        // GitHubトークンの設定
+        add_settings_field(
+            'github_token',
+            __( 'GitHub Personal Access Token', 'ktpwp' ),
+            array( $this, 'github_token_callback' ),
+            'ktp-developer-settings',
+            'update_notification_setting_section'
+        );
+
         // メール設定セクション
         add_settings_section(
             'email_setting_section',
@@ -2090,6 +2358,8 @@ class KTP_Settings {
             'ktp-settings'
         );
 
+        // ライセンス設定セクションは廃止
+
         // デザイン設定セクション
         add_settings_section(
             'design_setting_section',
@@ -2097,6 +2367,8 @@ class KTP_Settings {
             array( $this, 'print_design_section_info' ),
             'ktp-design'
         );
+
+        // アクティベーションキーフィールドは廃止
 
         // SMTPホスト
         add_settings_field(
@@ -2327,7 +2599,7 @@ class KTP_Settings {
         echo esc_html__( 'SMTPサーバーを使用したメール送信の設定を行います。SMTPを利用しない場合は空欄のままにしてください。', 'ktpwp' );
     }
 
-
+    // ライセンス設定セクション情報は廃止
 
     /**
      * デザイン設定セクションの説明
@@ -2339,7 +2611,7 @@ class KTP_Settings {
         echo esc_html__( 'プラグインの外観とデザインに関する設定を行います。', 'ktpwp' );
     }
 
-
+    // アクティベーションキーコールバックは廃止
 
     public function email_address_callback() {
         $options = get_option( $this->option_name );
@@ -3795,6 +4067,33 @@ define( 'WP_DEBUG_DISPLAY', false );
     }
 
     /**
+     * GitHubトークンコールバック
+     */
+    public function github_token_callback() {
+        $options = get_option( 'ktp_update_notification_settings', array() );
+        $value = isset( $options['github_token'] ) ? $options['github_token'] : '';
+        ?>
+        <input type="password" 
+               id="github_token" 
+               name="ktp_update_notification_settings[github_token]" 
+               value="<?php echo esc_attr( $value ); ?>" 
+               style="width: 400px;" />
+        <p class="description">
+            <strong style="color: #28a745;">✅ 公開リポジトリ用に最適化済み</strong><br>
+            <?php esc_html_e( '現在のプラグインは公開リポジトリ用に設定されています。', 'ktpwp' ); ?>
+            <br>
+            <?php esc_html_e( '非公開リポジトリを使用する場合のみ、GitHub Personal Access Tokenを設定してください。', 'ktpwp' ); ?>
+            <br>
+            <a href="https://github.com/settings/tokens" target="_blank">GitHub Personal Access Tokenの作成</a>
+            <br>
+            <?php esc_html_e( '必要な権限: repo (プライベートリポジトリへのアクセス)', 'ktpwp' ); ?>
+            <br><br>
+            <strong>現在の設定:</strong> 公開リポジトリ「KantanPro/KantanPro-a-」を使用
+        </p>
+        <?php
+    }
+
+    /**
      * 更新通知設定のサニタイズ
      */
     public function sanitize_update_notification_settings( $input ) {
@@ -3821,6 +4120,9 @@ define( 'WP_DEBUG_DISPLAY', false );
         $sanitized['notification_roles'] = isset( $input['notification_roles'] ) && is_array( $input['notification_roles'] ) 
             ? array_map( 'sanitize_text_field', $input['notification_roles'] ) 
             : array( 'administrator' );
+        
+        // GitHubトークン
+        $sanitized['github_token'] = isset( $input['github_token'] ) ? sanitize_text_field( $input['github_token'] ) : '';
         
         return $sanitized;
     }

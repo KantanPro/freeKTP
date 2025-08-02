@@ -11,47 +11,81 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_action(
     'wp_ajax_ktpwp_get_suppliers_for_cost',
     function () {
+		// デバッグログ開始
+		error_log('[SUPPLIER-COST-AJAX] 協力会社リスト取得開始');
+		error_log('[SUPPLIER-COST-AJAX] REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
+		error_log('[SUPPLIER-COST-AJAX] POST data: ' . print_r($_POST, true));
+		error_log('[SUPPLIER-COST-AJAX] Current user ID: ' . get_current_user_id());
+		error_log('[SUPPLIER-COST-AJAX] Current user capabilities: ' . print_r(wp_get_current_user()->allcaps, true));
+		
 		if ( ! current_user_can( 'edit_posts' ) ) {
+			error_log('[SUPPLIER-COST-AJAX] 権限エラー: ユーザーに権限がありません');
 			wp_send_json_error( '権限がありません' );
 		}
 		
-		// キャッシュから取得を試行
-		$cache_key = 'suppliers_for_cost_list';
-		$suppliers = ktpwp_cache_get( $cache_key );
-		
-		if ( false === $suppliers ) {
-			// キャッシュにない場合はDBから取得
+		try {
 			global $wpdb;
 			$table = $wpdb->prefix . 'ktp_supplier';
-			$suppliers = $wpdb->get_results( "SELECT id, company_name FROM $table WHERE 1 ORDER BY company_name ASC", ARRAY_A );
 			
-			// 結果をキャッシュに保存（15分間）
-			ktpwp_cache_set( $cache_key, $suppliers, 900 );
+			// テーブルの存在確認
+			$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$table'" ) === $table;
+			if ( ! $table_exists ) {
+				error_log('[SUPPLIER-COST-AJAX] テーブルが存在しません: ' . $table );
+				wp_send_json( array() );
+			}
+			
+			$query = "SELECT id, company_name FROM $table WHERE 1 ORDER BY company_name ASC";
+			error_log('[SUPPLIER-COST-AJAX] 実行クエリ: ' . $query );
+			
+			$suppliers = $wpdb->get_results( $query, ARRAY_A );
+			error_log('[SUPPLIER-COST-AJAX] クエリ結果: ' . print_r( $suppliers, true ) );
+			
+			if ( $wpdb->last_error ) {
+				error_log('[SUPPLIER-COST-AJAX] データベースエラー: ' . $wpdb->last_error );
+				wp_send_json_error( 'データベースエラー: ' . $wpdb->last_error );
+			}
+			
+			error_log('[SUPPLIER-COST-AJAX] 協力会社リスト取得成功: ' . count( $suppliers ) . '件' );
+			wp_send_json( $suppliers );
+			
+		} catch ( Exception $e ) {
+			error_log('[SUPPLIER-COST-AJAX] 例外発生: ' . $e->getMessage() );
+			wp_send_json_error( '協力会社リストの取得中にエラーが発生しました: ' . $e->getMessage() );
 		}
-		
-		wp_send_json( $suppliers );
 	}
 );
 
 add_action(
     'wp_ajax_ktpwp_get_supplier_skills_for_cost',
     function () {
+		// デバッグログ開始
+		error_log('[SUPPLIER-COST-AJAX] 職能リスト取得開始');
+		error_log('[SUPPLIER-COST-AJAX] REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
+		error_log('[SUPPLIER-COST-AJAX] POST data: ' . print_r($_POST, true));
+		error_log('[SUPPLIER-COST-AJAX] Current user ID: ' . get_current_user_id());
+		
 		if ( ! current_user_can( 'edit_posts' ) ) {
+			error_log('[SUPPLIER-COST-AJAX] 権限エラー: ユーザーに権限がありません');
 			wp_send_json_error( '権限がありません' );
 		}
+		
 		$supplier_id = isset( $_POST['supplier_id'] ) ? intval( $_POST['supplier_id'] ) : 0;
 		if ( ! $supplier_id ) {
+			error_log('[SUPPLIER-COST-AJAX] supplier_idが不正: ' . $supplier_id );
 			wp_send_json_error( 'supplier_idが不正です' );
 		}
 		
-		// キャッシュから取得を試行
-		$cache_key = "supplier_skills_for_cost_{$supplier_id}";
-		$skills = ktpwp_cache_get( $cache_key );
-		
-		if ( false === $skills ) {
-			// キャッシュにない場合はDBから取得
+		try {
 			global $wpdb;
 			$table = $wpdb->prefix . 'ktp_supplier_skills';
+			
+			// テーブルの存在確認
+			$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$table'" ) === $table;
+			if ( ! $table_exists ) {
+				error_log('[SUPPLIER-COST-AJAX] テーブルが存在しません: ' . $table );
+				wp_send_json( array() );
+			}
+			
 			$sql = $wpdb->prepare(
 				"
 			SELECT 
@@ -77,13 +111,24 @@ add_action(
 		",
 				$supplier_id
 			);
-			$skills = $wpdb->get_results( $sql, ARRAY_A );
 			
-			// 結果をキャッシュに保存（10分間）
-			ktpwp_cache_set( $cache_key, $skills, 600 );
+			error_log('[SUPPLIER-COST-AJAX] 実行クエリ: ' . $sql );
+			
+			$skills = $wpdb->get_results( $sql, ARRAY_A );
+			error_log('[SUPPLIER-COST-AJAX] クエリ結果: ' . print_r( $skills, true ) );
+			
+			if ( $wpdb->last_error ) {
+				error_log('[SUPPLIER-COST-AJAX] データベースエラー: ' . $wpdb->last_error );
+				wp_send_json_error( 'データベースエラー: ' . $wpdb->last_error );
+			}
+			
+			error_log('[SUPPLIER-COST-AJAX] 職能リスト取得成功: ' . count( $skills ) . '件' );
+			wp_send_json( $skills );
+			
+		} catch ( Exception $e ) {
+			error_log('[SUPPLIER-COST-AJAX] 例外発生: ' . $e->getMessage() );
+			wp_send_json_error( '職能リストの取得中にエラーが発生しました: ' . $e->getMessage() );
 		}
-		
-		wp_send_json( $skills );
 	}
 );
 

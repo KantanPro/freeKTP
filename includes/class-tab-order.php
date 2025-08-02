@@ -1468,7 +1468,7 @@ if ( ! class_exists( 'Kntan_Order_Class' ) ) {
 					$content .= '</button>';
 					$content .= '</form>';
 
-					// 右側：プレビューボタンとメールボタン
+					// 右側：プレビューボタン、メールボタン
 					$content .= '<div style="display: flex; gap: 5px;">';
 					// プレビューボタン（受注書IDのみ保持、最新データはAjaxで取得）
 					$content .= '<button id="orderPreviewButton" data-order-id="' . esc_attr( $order_data->id ) . '" title="' . esc_attr__( 'プレビュー', 'ktpwp' ) . '" style="padding: 6px 10px; font-size: 12px;">';
@@ -1718,9 +1718,28 @@ if ( ! class_exists( 'Kntan_Order_Class' ) ) {
                         );
 					}
 
-					// 部署選択がある場合の担当者名表示を修正
-					$user_display_name = esc_html( $order_data->user_name );
+					// 担当者名の表示を修正
+					$user_display_name = '';
+					
+					// まず受注書テーブルの担当者名を確認
+					if ( ! empty( $order_data->user_name ) ) {
+						$user_display_name = esc_html( $order_data->user_name );
+					} else {
+						// 受注書テーブルに担当者名がない場合は顧客テーブルから取得
+						if ( ! empty( $order_data->client_id ) ) {
+							$client_contact = $wpdb->get_var(
+								$wpdb->prepare(
+									"SELECT name FROM `{$client_table}` WHERE id = %d",
+									$order_data->client_id
+								)
+							);
+							if ( ! empty( $client_contact ) ) {
+								$user_display_name = esc_html( $client_contact );
+							}
+						}
+					}
 
+					// 部署選択がある場合の担当者名表示を修正
 					if ( class_exists( 'KTPWP_Department_Manager' ) && ! empty( $order_data->client_id ) ) {
 						$selected_department = KTPWP_Department_Manager::get_selected_department_by_client( $order_data->client_id );
 						if ( $selected_department ) {
@@ -1897,6 +1916,8 @@ if ( ! class_exists( 'Kntan_Order_Class' ) ) {
 
 			// 納期フィールドのJavaScriptファイルを読み込み
 			wp_enqueue_script( 'ktp-delivery-dates' );
+
+
 
 			return $content;
 		} // End of Order_Tab_View method
@@ -2654,9 +2675,9 @@ if ( ! class_exists( 'Kntan_Order_Class' ) ) {
 					$html .= '<div style="display: flex; padding: 6px 8px; height: 24px; background: ' . esc_attr( $bg_color ) . '; align-items: center;">';
 					$html .= '<div style="width: 30px; text-align: center;">' . $item_no . '</div>';
 					$html .= '<div style="flex: 1; text-align: left; margin-left: 8px;">' . esc_html( $product_name ) . '</div>';
-					$html .= '<div style="width: 80px; text-align: right;">¥' . $price_display . '</div>';
+					$html .= '<div style="width: 80px; text-align: right;">' . number_format( $price ) . '円</div>';
 					$html .= '<div style="width: 60px; text-align: right;">' . $quantity_display . $unit . '</div>';
-					$html .= '<div style="width: 80px; text-align: right;">¥' . number_format( $amount ) . '</div>';
+					$html .= '<div style="width: 80px; text-align: right;">' . number_format( $amount ) . '円</div>';
 					$html .= '<div style="width: 60px; text-align: center;">' . ( $tax_rate !== null ? $tax_rate . '%' : '' ) . '</div>';
 					$html .= '<div style="width: 100px; text-align: left; margin-left: 8px;">' . esc_html( $remarks ) . '</div>';
 					$html .= '</div>';
